@@ -1,11 +1,13 @@
 package com.vmware.gemfire;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.images.builder.Transferable;
@@ -22,13 +24,14 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   private final DockerImageName image;
   private final String suffix;
   private int serverCount = 2;
+  private String classpath = null;
 
   private GemFireProxyContainer proxy;
   private GemFireLocatorContainer locator;
   private final List<GemFireServerContainer> servers = new ArrayList<>();
 
   public GemFireClusterContainer() {
-    this(DockerImageName.parse(DEFAULT_IMAGE));
+    this(DEFAULT_IMAGE);
   }
 
   public GemFireClusterContainer(String imageName) {
@@ -57,8 +60,13 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     locator.start();
 
     for (Map.Entry<String, Integer> entry : proxy.getMappedPorts().entrySet()) {
-      GemFireServerContainer server = new GemFireServerContainer(entry.getKey(), entry.getValue(), DEFAULT_IMAGE);
+      GemFireServerContainer server =
+          new GemFireServerContainer(entry.getKey(), entry.getValue(), DEFAULT_IMAGE);
       server.withNetwork(network);
+      if (classpath != null) {
+        server.withFileSystemBind(classpath, "/build", BindMode.READ_ONLY);
+      }
+
       server.start();
       servers.add(server);
     }
@@ -83,6 +91,11 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   public SELF withServers(int serverCount) {
     this.serverCount = serverCount;
+    return self();
+  }
+
+  public SELF withClasspath(String classpath) {
+    this.classpath = new File(classpath).getAbsolutePath();
     return self();
   }
 
