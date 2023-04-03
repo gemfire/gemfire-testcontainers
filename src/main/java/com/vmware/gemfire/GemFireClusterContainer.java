@@ -1,9 +1,8 @@
 package com.vmware.gemfire;
 
-import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,26 +20,47 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   private static final String DEFAULT_IMAGE =
       "dev.registry.pivotal.io/pivotal-gemfire/vmware-gemfire:10.0.0-build.1806-dev_photon4";
 
+  private static final int DEFAULT_SERVER_COUNT = 2;
+
   private final DockerImageName image;
   private final String suffix;
-  private int serverCount = 2;
-  private String classpath = null;
 
   private GemFireProxyContainer proxy;
   private GemFireLocatorContainer locator;
   private final List<GemFireServerContainer> servers = new ArrayList<>();
 
+  /**
+   * Map that holds configuration for each cluster server. Indexing starts from 1.
+   */
+  private final List<MemberConfig> memberConfigs;
+  /**
+   * The index, in the memberConfigs map, that pertains to the whole cluster.
+   */
+  private static final int CLUSTER_INDEX = 0;
+
   public GemFireClusterContainer() {
-    this(DEFAULT_IMAGE);
+    this(DEFAULT_SERVER_COUNT, DEFAULT_IMAGE);
   }
 
-  public GemFireClusterContainer(String imageName) {
-    this(DockerImageName.parse(imageName));
+  public GemFireClusterContainer(int serverCount) {
+    this(serverCount, DEFAULT_IMAGE);
   }
 
-  public GemFireClusterContainer(DockerImageName image) {
+  public GemFireClusterContainer(int serverCount, String imageName) {
+    this(serverCount, DockerImageName.parse(imageName));
+  }
+
+  public GemFireClusterContainer(int serverCount, DockerImageName image) {
     this.image = image;
     this.suffix = Base58.randomString(6);
+
+    memberConfigs = new ArrayList<>(serverCount + 1);
+    memberConfigs.add(new MemberConfig("cluster"));
+
+    for (int i = 1; i <= serverCount; i++) {
+      String name = String.format("server-%d-%s", i, suffix);
+      memberConfigs.add(new MemberConfig(name));
+    }
   }
 
   @Override
@@ -49,23 +69,19 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
         .createNetworkCmdModifier(it -> it.withName("gemfire-cluster-" + suffix))
         .build();
 
-    List<String> serverNames = generateServerNames();
-
-    proxy = new GemFireProxyContainer(serverNames);
+    proxy = new GemFireProxyContainer(memberConfigs);
     proxy.withNetwork(network);
+    // Once the proxy has started, all the forwarding ports, for each MemberConfig, will be set.
     proxy.start();
 
     locator = new GemFireLocatorContainer(image);
     locator.withNetwork(network);
     locator.start();
 
-    for (Map.Entry<String, Integer> entry : proxy.getMappedPorts().entrySet()) {
-      GemFireServerContainer server =
-          new GemFireServerContainer(entry.getKey(), entry.getValue(), DEFAULT_IMAGE);
+    for (int i = 1; i < memberConfigs.size(); i++) {
+      MemberConfig config = memberConfigs.get(i);
+      GemFireServerContainer server = new GemFireServerContainer(config, DEFAULT_IMAGE);
       server.withNetwork(network);
-      if (classpath != null) {
-        server.withFileSystemBind(classpath, "/build", BindMode.READ_ONLY);
-      }
 
       server.start();
       servers.add(server);
@@ -79,23 +95,34 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     locator.stop();
   }
 
-  private List<String> generateServerNames() {
-    List<String> names = new ArrayList<>(serverCount);
-    for (int i = 1; i <= serverCount; i++) {
-      String name = String.format("server-%d-%s", i, suffix);
-      names.add(name);
-    }
-
-    return names;
-  }
-
-  public SELF withServers(int serverCount) {
-    this.serverCount = serverCount;
+  public SELF withClasspath(String classpath) {
+    memberConfigs.get(CLUSTER_INDEX).addConfig(container -> container
+        .withFileSystemBind(classpath, "/build", BindMode.READ_ONLY));
     return self();
   }
 
-  public SELF withClasspath(String classpath) {
-    this.classpath = new File(classpath).getAbsolutePath();
+  public SELF withGemFireProperty(int serverIndex, String name, String value) {
+    memberConfigs.get(serverIndex)
+        .addConfig(container -> container.addJvmArg(String.format("-Dgemfire.%s=%s", name, value)));
+    return self();
+  }
+
+  public SELF withDebugPort(int serverIndex, int port) {
+    memberConfigs.get(serverIndex).addConfig(container -> {
+      container.setPortBindings(Collections.singletonList(String.format("%d:%d", port, port)));
+      container.addJvmArg("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:" + port);
+      System.err.println("Waiting for debugger to connect on port " + port);
+    });
+    return self();
+  }
+
+  /**
+   * Accepts the license for the GemFire container by setting the ACCEPT_EULA=Y
+   * variable as described at [someplace to be decided...]
+   */
+  public SELF acceptLicense() {
+    memberConfigs.get(CLUSTER_INDEX).addConfig(container -> container
+        .addEnv("ACCEPT_EULA", "Y"));
     return self();
   }
 

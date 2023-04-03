@@ -30,9 +30,9 @@ public class GemFireTestcontainersTest {
           cache.<Integer, String>createClientRegionFactory(ClientRegionShortcut.PROXY)
               .create("FOO");
 
-      region.put(1, "Hey");
+      region.put(1, "Hello World");
 
-      assertThat(region.get(1)).isEqualTo("Hey");
+      assertThat(region.get(1)).isEqualTo("Hello World");
     }
   }
 

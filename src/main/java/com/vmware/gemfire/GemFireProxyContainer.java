@@ -1,9 +1,7 @@
 package com.vmware.gemfire;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import org.testcontainers.containers.SocatContainer;
@@ -20,16 +18,17 @@ public class GemFireProxyContainer extends SocatContainer {
 
   private static final int BASE_PORT = 2000;
 
-  private final Map<String, Integer> internalPortMapping = new HashMap<>();
-  private final Map<String, Integer> mappedPorts = new HashMap<>();
+  private final List<MemberConfig> serverConfigs;
 
-  public GemFireProxyContainer(List<String> serverNames) {
+  public GemFireProxyContainer(List<MemberConfig> serverConfigs) {
     super();
 
-    for (int i = 0; i < serverNames.size(); i++) {
+    this.serverConfigs = serverConfigs;
+
+    for (int i = 1; i < serverConfigs.size(); i++) {
       int port = BASE_PORT + i;
       addExposedPort(port);
-      internalPortMapping.put(serverNames.get(i), port);
+      serverConfigs.get(i).setProxyListenPort(port);
     }
   }
 
@@ -41,23 +40,20 @@ public class GemFireProxyContainer extends SocatContainer {
   @Override
   protected void containerIsStarting(InspectContainerResponse containerInfo) {
     List<String> socats = new ArrayList<>();
-    for (Map.Entry<String, Integer> entry : internalPortMapping.entrySet()) {
-      int internalPort = entry.getValue();
+    for (int i = 1; i < serverConfigs.size(); i++) {
+      MemberConfig config = serverConfigs.get(i);
+      int internalPort = config.getProxyListenPort();
       int mappedPort = getMappedPort(internalPort);
-      mappedPorts.put(entry.getKey(), mappedPort);
+      config.setProxyForwardPort(mappedPort);
 
       socats.add(String.format("socat TCP-LISTEN:%d,fork,reuseaddr TCP:%s:%d", internalPort,
-          entry.getKey(), mappedPort));
+          config.getServerName(), mappedPort));
     }
 
     String command = "#!/bin/sh\n";
     command += String.join(" & ", socats);
 
     copyFileToContainer(Transferable.of(command, 0777), STARTER_SCRIPT);
-  }
-
-  public Map<String, Integer> getMappedPorts() {
-    return mappedPorts;
   }
 
 }

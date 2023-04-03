@@ -5,11 +5,9 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
-public class GemFireLocatorContainer extends GenericContainer<GemFireLocatorContainer> {
+public class GemFireLocatorContainer extends AbstractGemFireContainer {
 
   private static final Logger LOG = LoggerFactory.getLogger(GemFireLocatorContainer.class);
 
@@ -27,8 +25,6 @@ public class GemFireLocatorContainer extends GenericContainer<GemFireLocatorCont
     super(image);
 
     withCreateContainerCmdModifier(it -> it.withName(LOCATOR_NAME));
-
-    withLogConsumer(x -> new Slf4jLogConsumer(logger()));
 
     withExposedPorts(LOCATOR_PORT, HTTP_PORT);
 
