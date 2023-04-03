@@ -80,7 +80,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     memberConfigs = new ArrayList<>(serverCount);
 
     for (int i = 0; i < serverCount; i++) {
-      String name = String.format("server-%d-%s", i + 1, suffix);
+      String name = String.format("server-%d-%s", i, suffix);
       memberConfigs.add(new MemberConfig(name));
     }
   }

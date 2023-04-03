@@ -25,9 +25,7 @@ a connection to the locator:
 By default, a single locator and 2 servers are created. Additional servers can be created using the
 parameterized `GemFireClusterContainer` constructor.
 
-Some API calls require targeting a specific server. Servers are numbered starting at `1` and `0` is
-used to refer to the entire cluster. Where relevant, targeting `0`, will apply the configuration to
-all members of the cluster.
+Some API calls require targeting a specific server. Servers are numbered starting at `0`.
 
 !!! warning "EULA Acceptance"
     Due to licensing restrictions you are required to accept an EULA for this container image.
