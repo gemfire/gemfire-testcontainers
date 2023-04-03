@@ -15,7 +15,7 @@ public class GemFireTestcontainersTest {
   public void basicTest() {
     try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
 
-      cluster.withClasspath("out/production/classes");
+      cluster.withClasspath("build");
       cluster.start();
 
       cluster.gfsh(true, "list members",

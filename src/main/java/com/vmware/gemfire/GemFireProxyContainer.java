@@ -25,7 +25,7 @@ public class GemFireProxyContainer extends SocatContainer {
 
     this.serverConfigs = serverConfigs;
 
-    for (int i = 1; i < serverConfigs.size(); i++) {
+    for (int i = 0; i < serverConfigs.size(); i++) {
       int port = BASE_PORT + i;
       addExposedPort(port);
       serverConfigs.get(i).setProxyListenPort(port);
@@ -40,7 +40,7 @@ public class GemFireProxyContainer extends SocatContainer {
   @Override
   protected void containerIsStarting(InspectContainerResponse containerInfo) {
     List<String> socats = new ArrayList<>();
-    for (int i = 1; i < serverConfigs.size(); i++) {
+    for (int i = 0; i < serverConfigs.size(); i++) {
       MemberConfig config = serverConfigs.get(i);
       int internalPort = config.getProxyListenPort();
       int mappedPort = getMappedPort(internalPort);

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.github.dockerjava.api.model.Bind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.utility.DockerImageName;
@@ -53,6 +54,13 @@ public class GemFireServerContainer extends AbstractGemFireContainer {
 
     String execPart =
         "export BOOTSTRAP_JAR=$(basename /gemfire/lib/gemfire-bootstrap-*.jar); exec java ";
+
+    String classpathPart = "-classpath /gemfire/lib/${BOOTSTRAP_JAR}";
+    for (Bind bind : getBinds()) {
+      classpathPart = classpathPart + ":" + bind.getVolume().getPath();
+    }
+    classpathPart += " ";
+
     String launcherPart =
         " com.vmware.gemfire.bootstrap.ServerLauncher start " + config.getServerName() +
         " --automatic-module-classpath=/gemfire/extensions/*" +
@@ -62,7 +70,7 @@ public class GemFireServerContainer extends AbstractGemFireContainer {
 
     withCreateContainerCmdModifier(cmd -> cmd.withEntrypoint("sh"));
 
-    withCommand("-c", execPart + jvmArgsPart + launcherPart);
+    withCommand("-c", execPart + classpathPart + jvmArgsPart + launcherPart);
   }
 
 }

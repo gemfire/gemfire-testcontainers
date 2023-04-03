@@ -57,13 +57,9 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   private final List<GemFireServerContainer> servers = new ArrayList<>();
 
   /**
-   * Map that holds configuration for each cluster server. Indexing starts from 1.
+   * List that holds configuration for each cluster server.
    */
   private final List<MemberConfig> memberConfigs;
-  /**
-   * The index, in the memberConfigs map, that pertains to the whole cluster.
-   */
-  private static final int CLUSTER_INDEX = 0;
 
   public GemFireClusterContainer() {
     this(DEFAULT_SERVER_COUNT, DEFAULT_IMAGE);
@@ -81,11 +77,10 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     this.image = image;
     this.suffix = Base58.randomString(6);
 
-    memberConfigs = new ArrayList<>(serverCount + 1);
-    memberConfigs.add(new MemberConfig("cluster"));
+    memberConfigs = new ArrayList<>(serverCount);
 
-    for (int i = 1; i <= serverCount; i++) {
-      String name = String.format("server-%d-%s", i, suffix);
+    for (int i = 0; i < serverCount; i++) {
+      String name = String.format("server-%d-%s", i + 1, suffix);
       memberConfigs.add(new MemberConfig(name));
     }
   }
@@ -105,7 +100,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     locator.withNetwork(network);
     locator.start();
 
-    for (int i = 1; i < memberConfigs.size(); i++) {
+    for (int i = 0; i < memberConfigs.size(); i++) {
       MemberConfig config = memberConfigs.get(i);
       GemFireServerContainer server = new GemFireServerContainer(config, DEFAULT_IMAGE);
       server.withNetwork(network);
@@ -123,15 +118,18 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   }
 
   /**
-   * The given local path will be made available on the classpath of the container.
+   * The given local paths will be made available on the classpath of the container.
    *
-   * @param classpath which is resolved to an absolute path and then bind-mounted to each container
-   *                  at the location {@code /build}. This path is added to the classpath of the
-   *                  started JVM instance.
+   * @param classpaths which are resolved to absolute paths and then bind-mounted to each container
+   *                   at the location {@code /classpath/0, /classpath/1, etc.}. These paths are
+   *                   added to the classpath of the started JVM instance.
    */
-  public SELF withClasspath(String classpath) {
-    memberConfigs.get(CLUSTER_INDEX).addConfig(container -> container
-        .withFileSystemBind(classpath, "/build", BindMode.READ_ONLY));
+  public SELF withClasspath(String... classpaths) {
+    memberConfigs.forEach(member -> member.addConfig(container -> {
+      for (int i = 0; i < classpaths.length; i++) {
+        container.addFileSystemBind(classpaths[i], "/classpath/" + i, BindMode.READ_ONLY);
+      }
+    }));
     return self();
   }
 
@@ -168,8 +166,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * variable as described at [someplace to be decided...]
    */
   public SELF acceptLicense() {
-    memberConfigs.get(CLUSTER_INDEX).addConfig(container -> container
-        .addEnv("ACCEPT_EULA", "Y"));
+    memberConfigs.forEach(member -> member.addConfig(container -> container
+        .addEnv("ACCEPT_EULA", "Y")));
     return self();
   }
 
