@@ -23,6 +23,7 @@ import org.testcontainers.utility.DockerImageName;
  * Example:
  * <pre>
  *   try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
+ *     cluster.acceptLicense();
  *     cluster.start();
  *
  *     cluster.gfsh(true, "list members",
@@ -250,6 +251,13 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    */
   public int getLocatorPort() {
     return getMappedPort(LOCATOR_PORT);
+  }
+
+  /**
+   * Return the port that can be used to connect {@code gfsh} over HTTP.
+   */
+  public int getHttpPort() {
+    return getMappedPort(HTTP_PORT);
   }
 
   /**

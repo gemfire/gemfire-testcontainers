@@ -36,6 +36,19 @@ Some API calls require targeting a specific server. Servers are numbered startin
 
     Please see the [`vmware-gemfire` image documentation](https://hub.docker.com/_/vmware-gemfire#environment-variables) for a link to the EULA document.
 
+## GFSH integration
+
+The `gfsh` CLI utility is often used to configure a GemFire cluster. To facilitate this from within 
+Testcontainers, a convenience method is provided to execute arbitrary `gfsh` commands against the
+cluster:
+
+```java
+    cluster.gfsh(true, "list members",
+        "create region --name=ORDERS --type=REPLICATE");
+```
+
+This, effectively, creates a single script and executes it on the locator instance. The output can optionally be logged.
+
 ## Additional configuration
 
 Servers can be configured with specific GemFire parameters:
