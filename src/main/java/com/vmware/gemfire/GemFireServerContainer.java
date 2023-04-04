@@ -1,29 +1,29 @@
 package com.vmware.gemfire;
 
-import static com.vmware.gemfire.GemFireLocatorContainer.LOCATOR_NAME;
-import static com.vmware.gemfire.GemFireLocatorContainer.LOCATOR_PORT;
+import static com.vmware.gemfire.GemFireClusterContainer.LOCATOR_NAME;
+import static com.vmware.gemfire.GemFireClusterContainer.LOCATOR_PORT;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.Bind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.utility.DockerImageName;
 
-public class GemFireServerContainer extends AbstractGemFireContainer {
+public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
+    extends AbstractGemFireContainer<SELF> {
 
   private static final Logger LOG = LoggerFactory.getLogger(GemFireServerContainer.class);
 
   private static final List<String> DEFAULT_JVM_ARGS = Arrays.asList(
       "-server",
-      "-classpath /gemfire/lib/${BOOTSTRAP_JAR}:/build",
       "--add-exports=java.management/com.sun.jmx.remote.security=ALL-UNNAMED",
       "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
       "--add-opens=java.base/java.lang=ALL-UNNAMED",
       "--add-opens=java.base/java.nio=ALL-UNNAMED",
-      "-DgemfirePropertyFile=/application/server_gemfire.properties",
       "-Dgemfire.start-dev-rest-api=false",
       "-Dgemfire.use-cluster-configuration=true",
       "-Dgemfire.log-level=fine",
@@ -69,8 +69,12 @@ public class GemFireServerContainer extends AbstractGemFireContainer {
     String jvmArgsPart = String.join(" ", jvmArgs);
 
     withCreateContainerCmdModifier(cmd -> cmd.withEntrypoint("sh"));
-
     withCommand("-c", execPart + classpathPart + jvmArgsPart + launcherPart);
   }
 
+  @Override
+  protected void containerIsStarted(InspectContainerResponse containerInfo) {
+    super.containerIsStarted(containerInfo);
+    logger().info("Started GemFire server: {}", containerInfo.getName());
+  }
 }
