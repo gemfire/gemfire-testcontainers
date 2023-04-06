@@ -82,7 +82,6 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   private final Network network;
   private final DockerImageName image;
   private final String suffix;
-  private final int serverCount;
 
   private GemFireProxyContainer proxy;
   private final List<GemFireServerContainer<?>> servers = new ArrayList<>();
@@ -114,7 +113,6 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   public GemFireClusterContainer(int serverCount, DockerImageName image) {
     super(image);
-    this.serverCount = serverCount;
     this.image = image;
     this.suffix = Base58.randomString(6);
 

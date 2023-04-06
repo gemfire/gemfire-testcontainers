@@ -13,7 +13,7 @@ import org.apache.geode.examples.SimpleSecurityManager;
 public class GemFireTestcontainersTest {
 
   @Test
-  public void basicSetupTest() {
+  public void testBasicSetup() {
     try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
 
       cluster.withServerConfiguration(container ->
@@ -71,7 +71,7 @@ public class GemFireTestcontainersTest {
 
   @Test
   public void testWithSecurityManager() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>("vmware-gemfire:latest")) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
       cluster.withGemFireProperty("security-manager", SimpleSecurityManager.class.getName());
       cluster.withGemFireProperty("security-username", "cluster");
       cluster.withGemFireProperty("security-password", "cluster");
@@ -101,7 +101,7 @@ public class GemFireTestcontainersTest {
   public void testWithStaticLocatorPort() {
     final int locatorPort = 54321;
 
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>("vmware-gemfire:latest")) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
       cluster.withLocatorPort(locatorPort);
       cluster.start();
 
