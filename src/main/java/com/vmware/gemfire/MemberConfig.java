@@ -7,9 +7,11 @@ import java.util.function.Consumer;
 class MemberConfig {
 
   private final String serverName;
-  private List<Consumer<AbstractGemFireContainer>> configConsumers = new ArrayList<>();
+  private final List<Consumer<AbstractGemFireContainer<?>>> configConsumers = new ArrayList<>();
   private int proxyListenPort;
   private int proxyForwardPort;
+  private String locatorHost;
+  private int locatorPort;
 
   MemberConfig(String serverName) {
     this.serverName = serverName;
@@ -19,11 +21,11 @@ class MemberConfig {
     return serverName;
   }
 
-  void addConfig(Consumer<AbstractGemFireContainer> config) {
+  void addConfig(Consumer<AbstractGemFireContainer<?>> config) {
     configConsumers.add(config);
   }
 
-  void apply(AbstractGemFireContainer container) {
+  void apply(AbstractGemFireContainer<?> container) {
     configConsumers.forEach(config -> config.accept(container));
   }
 
@@ -41,6 +43,19 @@ class MemberConfig {
 
   public int getProxyForwardPort() {
     return proxyForwardPort;
+  }
+
+  public void setLocatorHostPort(String locatorHost, int locatorPort) {
+    this.locatorHost = locatorHost;
+    this.locatorPort = locatorPort;
+  }
+
+  public String getLocatorHost() {
+    return locatorHost;
+  }
+
+  public int getLocatorPort() {
+    return locatorPort;
   }
 
 }

@@ -64,11 +64,22 @@ Servers can be configured with specific GemFire parameters:
 One or more local directories may be exposed on the classpath of each member of the cluster:
 
 ```java
-cluster.withClasspath("build/classes/java/main");
+cluster.withClasspath("build/classes/java/main", "out/production/classes");
 ```
 
 This will allow the local directory to be mounted (read-only) within each container and added to
 the classpath.
+
+### PDX
+
+PDX can be configured by setting the regular expression of the default `ReflectionBasedAutoSerializer`
+and selecting the 'read serialized' option:
+
+```java
+    cluster.withPdx("com.example.*", true);
+```
+
+More details about PDX can be found [here](https://)
 
 ### Debugging
 

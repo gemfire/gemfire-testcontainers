@@ -35,12 +35,15 @@ public class GemFireTestcontainersTest {
 
         assertThat(region.get(1)).isEqualTo("Hello World");
       }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      throw ex;
     }
   }
 
   @Test
   public void testWithSecurityManager() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>("vmware-gemfire:latest")) {
       cluster.withGemFireProperty("security-manager", SimpleSecurityManager.class.getName());
       cluster.withGemFireProperty("security-username", "cluster");
       cluster.withGemFireProperty("security-password", "cluster");
@@ -63,6 +66,36 @@ public class GemFireTestcontainersTest {
 
         assertThat(region.get(1)).isEqualTo("Hello World");
       }
+    }
+  }
+
+  @Test
+  public void testWithStaticLocatorPort() {
+    final int locatorPort = 54321;
+
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>("vmware-gemfire:latest")) {
+      cluster.withLocatorPort(locatorPort);
+      cluster.start();
+
+      assertThat(cluster.getLocatorPort()).isEqualTo(locatorPort);
+
+      cluster.gfsh(false, "create region --name=FOO --type=REPLICATE");
+
+      try (ClientCache cache = new ClientCacheFactory()
+          .addPoolLocator("localhost", cluster.getLocatorPort())
+          .create()) {
+
+        Region<Integer, String> region =
+            cache.<Integer, String>createClientRegionFactory(ClientRegionShortcut.PROXY)
+                .create("FOO");
+
+        region.put(1, "Hello World");
+
+        assertThat(region.get(1)).isEqualTo("Hello World");
+      }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      throw ex;
     }
   }
 

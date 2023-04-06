@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.Bind;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.Base58;
 import org.testcontainers.utility.DockerImageName;
@@ -46,13 +48,13 @@ import org.testcontainers.utility.DockerImageName;
  */
 public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>> extends AbstractGemFireContainer<SELF> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(GemFireClusterContainer.class);
+  private static final String LOCATOR_NAME_PREFIX = "locator-1";
 
-  protected static final String LOCATOR_NAME = "locator-1";
-
-  protected static final int LOCATOR_PORT = 10334;
+  private static final int LOCATOR_PORT = 10334;
 
   private static final int HTTP_PORT = 7070;
+
+  private static final int JMX_PORT = 1099;
 
   private static final List<String> DEFAULT_LOCATOR_JVM_ARGS = Arrays.asList(
       "-server",
@@ -63,6 +65,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
       "-Dgemfire.use-cluster-configuration=true",
       "-Dgemfire.log-level=info",
       "-Dgemfire.http-service-port=7070",
+      "-Dgemfire.jmx-manager-start=true",
       "-XX:OnOutOfMemoryError=kill",
       "-Dgemfire.launcher.registerSignalHandlers=true",
       "-Djava.awt.headless=true",
@@ -76,9 +79,14 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   private final Network network;
   private final DockerImageName image;
   private final String suffix;
+  private final int serverCount;
 
   private GemFireProxyContainer proxy;
   private final List<GemFireServerContainer<?>> servers = new ArrayList<>();
+  private String pdxAutoSerializerRegex = null;
+  private boolean pdxReadSerialized;
+  private String locatorName;
+  private int locatorPort = 0;
 
   /**
    * List that holds configuration for each cluster server.
@@ -103,16 +111,19 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   public GemFireClusterContainer(int serverCount, DockerImageName image) {
     super(image);
+    this.serverCount = serverCount;
     this.image = image;
     this.suffix = Base58.randomString(6);
 
+    locatorName = LOCATOR_NAME_PREFIX + "-" + suffix;
     jvmArgs = new ArrayList<>(DEFAULT_LOCATOR_JVM_ARGS);
 
     memberConfigs = new ArrayList<>(serverCount);
-
     for (int i = 0; i < serverCount; i++) {
       String name = String.format("server-%d-%s", i, suffix);
-      memberConfigs.add(new MemberConfig(name));
+      MemberConfig config = new MemberConfig(name);
+      config.setLocatorHostPort(locatorName, locatorPort);
+      memberConfigs.add(config);
     }
 
     network = Network.builder()
@@ -125,8 +136,21 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   protected void configure() {
     super.configure();
 
-    withCreateContainerCmdModifier(it -> it.withName(LOCATOR_NAME));
-    withExposedPorts(LOCATOR_PORT, HTTP_PORT);
+    withCreateContainerCmdModifier(it -> it.withName(locatorName));
+
+    // The default Wait strategy waits for all the exposed (mapped) ports to start listening
+    withExposedPorts(JMX_PORT, HTTP_PORT);
+
+    // If we didn't request an explicit locator port then just expose an ephemeral port
+    if (locatorPort == 0) {
+      addExposedPort(LOCATOR_PORT);
+      locatorPort = LOCATOR_PORT;
+    } else {
+      setPortBindings(Collections.singletonList(String.format("%d:%d", locatorPort, locatorPort)));
+    }
+
+    // Once the locator port is established, update the MemberConfigs
+    memberConfigs.forEach(m -> m.setLocatorHostPort(locatorName, locatorPort));
 
     String execPart =
         "export BOOTSTRAP_JAR=$(basename /gemfire/lib/gemfire-bootstrap-*.jar); exec java ";
@@ -137,21 +161,25 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     }
     classpathPart += " ";
 
-    String launcherPart = " com.vmware.gemfire.bootstrap.LocatorLauncher start " + LOCATOR_NAME +
+    String launcherPart = " com.vmware.gemfire.bootstrap.LocatorLauncher start " + locatorName +
         " --automatic-module-classpath=/gemfire/extensions/*" +
-        " --port=" + LOCATOR_PORT +
+        " --port=" + locatorPort +
         " --hostname-for-clients=localhost";
 
     String jvmArgsPart = String.join(" ", jvmArgs);
 
     withCreateContainerCmdModifier(cmd -> cmd.withEntrypoint("sh"));
     withCommand("-c", execPart + classpathPart + jvmArgsPart + launcherPart);
-
-    // The default Wait strategy waits for the first exposed (mapped) port to start listening
   }
 
   @Override
   protected void containerIsStarted(InspectContainerResponse containerInfo) {
+    if (pdxAutoSerializerRegex != null) {
+      logger().info("Configuring PDX");
+      gfsh(true,
+          String.format("configure pdx --disk-store=DEFAULT --read-serialized=%s --auto-serializable-classes=%s", pdxReadSerialized, pdxAutoSerializerRegex));
+    }
+
     proxy = new GemFireProxyContainer(memberConfigs);
     proxy.withNetwork(network);
     // Once the proxy has started, all the forwarding ports, for each MemberConfig, will be set.
@@ -169,9 +197,24 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   @Override
   public void stop() {
-    proxy.stop();
+    if (proxy != null) {
+      proxy.stop();
+    }
     servers.forEach(GenericContainer::stop);
     super.stop();
+  }
+
+  /**
+   * The provided consumer is applied to this container, (effectively the locator), and all
+   * additional GemFire server containers managed by this instance.
+   * @param consumer consumer that output frames should be sent to
+   */
+  @Override
+  public SELF withLogConsumer(Consumer<OutputFrame> consumer) {
+    super.withLogConsumer(consumer);
+    memberConfigs.forEach(member -> member
+        .addConfig(container -> container.withLogConsumer(consumer)));
+    return self();
   }
 
   /**
@@ -246,11 +289,39 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   }
 
   /**
+   * Configure PDX. This would typically need to happen after the locator starts but before
+   * servers start. To facilitate that, the configuration is provided with this API before the
+   * cluster is started.
+   * @param pdxAutoSerializerRegex the regex that defines classes to be considered for PDX
+   *                               serialization
+   * @param pdxReadSerialized boolean that determines whether values are retrieved as
+   *                          {@code PdxInstance}s
+   */
+  public SELF withPdx(String pdxAutoSerializerRegex, boolean pdxReadSerialized) {
+    this.pdxAutoSerializerRegex = pdxAutoSerializerRegex;
+    this.pdxReadSerialized = pdxReadSerialized;
+    return self();
+  }
+
+  /**
+   * Configure an explicit port to expose for the locator.
+   * <p>
+   * Under most circumstances, the locator's  port can be ephemeral and a test can simply use
+   * {@link #getLocatorPort()} to retrieve it. At other times it may be necessary to explicitly
+   * provide the port for the locator to use which is when this API should be used.
+   * @param locatorPort the port to expose for the locator
+   */
+  public SELF withLocatorPort(int locatorPort) {
+    this.locatorPort = locatorPort;
+    return self();
+  }
+
+  /**
    * Return the port at which the locator is listening. This would be used to configure a
    * GemFire client to connect.
    */
   public int getLocatorPort() {
-    return getMappedPort(LOCATOR_PORT);
+    return getMappedPort(locatorPort);
   }
 
   /**
@@ -274,32 +345,47 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    *                  error code, the output will always be logged.
    * @param commands  a list of commands to execute. There is no need to provide an explicit
    *                  {@code connect} command unless additional parameters are required.
+   * @return the result output of executing the gfsh commands as a script.
    */
-  public void gfsh(boolean logOutput, String... commands) {
+  public String gfsh(boolean logOutput, String... commands) {
     if (commands.length == 0) {
-      return;
+      return null;
     }
 
+    Logger logger = LoggerFactory.getLogger("gfsh");
     String fullCommand;
     if (commands[0].startsWith("connect")) {
       fullCommand = "";
     } else {
-      fullCommand = "connect\n";
+      fullCommand = String.format("connect --jmx-manager=localhost[%d]\n", JMX_PORT);
     }
     fullCommand += String.join("\n", commands);
 
     copyFileToContainer(Transferable.of(fullCommand, 06666), "/script.gfsh");
+    ExecResult result;
     try {
-      ExecResult result = execInContainer("gfsh", "-e", "run --file=/script.gfsh");
+      result = execInContainer("gfsh", "-e", "run --file=/script.gfsh");
 
-      if (logOutput || result.getExitCode() != 0) {
+      boolean scriptError = result.getExitCode() != 0;
+      if (logOutput || scriptError) {
         for (String line : result.toString().split("\n")) {
-          LOG.info(line);
+          if (scriptError) {
+            logger.error(line);
+          } else {
+            logger.info(line);
+          }
         }
       }
     } catch (Exception ex) {
-      throw new RuntimeException("Error executing gfsh command: " + fullCommand, ex);
+      throw new RuntimeException("Error executing gfsh command: " + Arrays.asList(commands), ex);
     }
+
+    if (result.getExitCode() != 0) {
+      throw new RuntimeException("Error executing gfsh command. Return code: " +
+          result.getExitCode());
+    }
+
+    return result.toString();
   }
 
 }

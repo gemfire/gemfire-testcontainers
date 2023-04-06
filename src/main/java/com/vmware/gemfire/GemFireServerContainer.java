@@ -1,22 +1,15 @@
 package com.vmware.gemfire;
 
-import static com.vmware.gemfire.GemFireClusterContainer.LOCATOR_NAME;
-import static com.vmware.gemfire.GemFireClusterContainer.LOCATOR_PORT;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.Bind;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.utility.DockerImageName;
 
 public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
     extends AbstractGemFireContainer<SELF> {
-
-  private static final Logger LOG = LoggerFactory.getLogger(GemFireServerContainer.class);
 
   private static final List<String> DEFAULT_JVM_ARGS = Arrays.asList(
       "-server",
@@ -26,7 +19,8 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
       "--add-opens=java.base/java.nio=ALL-UNNAMED",
       "-Dgemfire.start-dev-rest-api=false",
       "-Dgemfire.use-cluster-configuration=true",
-      "-Dgemfire.log-level=fine",
+      "-Dgemfire.log-level=info",
+      "-Dgemfire.log-file=",
       "-Dgemfire.locator-wait-time=120",
       "-XX:OnOutOfMemoryError=kill",
       "-Dgemfire.launcher.registerSignalHandlers=true",
@@ -47,7 +41,7 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
     // This is just so that TC can use the mapped port for the initial wait strategy.
     withExposedPorts(config.getProxyForwardPort());
 
-    String locator = String.format("%s[%d]", LOCATOR_NAME, LOCATOR_PORT);
+    String locator = String.format("%s[%d]", config.getLocatorHost(), config.getLocatorPort());
     jvmArgs.add("-Dgemfire.locators=" + locator);
 
     config.apply(this);
