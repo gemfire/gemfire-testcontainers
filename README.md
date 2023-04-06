@@ -1,3 +1,23 @@
+# NOTE:
+
+This code is in flux. The intention is to add it as an official Testcontainers module.
+
+In order to build and test it, you will need a locally published GemFire build. In your current
+develop checkout do:
+
+```shell
+./gradlew devBuild publishToMavenLocal
+```
+This will create a local maven GemFire artifact with a version of `10.1.0-build.0`. Adjust the
+GemFire dependency, in this project's `build.gradle`, accordingly if you are building a different
+version.
+
+You will need to login to Tanzunet / Harbor in order to pull the GemFire image:
+
+```shell
+docker login dev.registry.pivotal.io
+```
+
 # VMware GemFire
 
 Testcontainers can be used to automatically instantiate and manage [VMware GemFire](https://vmware.com/)
