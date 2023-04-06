@@ -1,5 +1,8 @@
 package com.vmware.gemfire;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -205,6 +208,23 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   }
 
   /**
+   * A low-level convenience method to be able to apply a given configuration to  each GemFire
+   * server container on startup. Note that this method does not apply the configuration to the
+   * locator. For that, simply use the regular methods exposed by this class.
+   * <p>
+   * For example:
+   * <pre>
+   *   cluster.withServerConfiguration(container ->
+   *       container.addJvmArg("-Dcustom.property=true"));
+   * </pre>
+   * @param config the configuration that is applied before container startup
+   */
+  public SELF withServerConfiguration(Consumer<AbstractGemFireContainer<?>> config) {
+    memberConfigs.forEach(member -> member.addConfig(config));
+    return self();
+  }
+
+  /**
    * The provided consumer is applied to this container, (effectively the locator), and all
    * additional GemFire server containers managed by this instance.
    * @param consumer consumer that output frames should be sent to
@@ -212,25 +232,22 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   @Override
   public SELF withLogConsumer(Consumer<OutputFrame> consumer) {
     super.withLogConsumer(consumer);
-    memberConfigs.forEach(member -> member
-        .addConfig(container -> container.withLogConsumer(consumer)));
-    return self();
+    return withServerConfiguration(container -> container.withLogConsumer(consumer));
   }
 
   /**
    * The given local paths will be made available on the classpath of the container.
    *
-   * @param classpaths which are resolved to absolute paths and then bind-mounted to each container
+   * @param classpaths which are resolved to absolute paths and then bind-mounted in each container
    *                   at the location {@code /classpath/0, /classpath/1, etc.}. These paths are
    *                   added to the classpath of the started JVM instance.
    */
   public SELF withClasspath(String... classpaths) {
-    memberConfigs.forEach(member -> member.addConfig(container -> {
+    return withServerConfiguration(container -> {
       for (int i = 0; i < classpaths.length; i++) {
         container.addFileSystemBind(classpaths[i], "/classpath/" + i, BindMode.READ_ONLY);
       }
-    }));
-    return self();
+    });
   }
 
   /**
@@ -248,16 +265,17 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   }
 
   /**
-   * Add the property to all GemFire members - this includes both the locator and all servers,
-   * @param name        the name of the property. The property will automatically be prefixed with
+   * Add the property to all GemFire members - this includes both the locator and all servers.
+   * The property is set as a GemFire java system property and will automatically be prefixed with
+   * '{@code gemfire.}'.
+   * @param name        the name of the property. The property need not be prefixed with
    *                    {@code gemfire.}
    * @param value       the value of the property to set
    */
   public SELF withGemFireProperty(String name, String value) {
     addJvmArg(String.format("-Dgemfire.%s=%s", name, value));
-    memberConfigs.forEach(member -> member.addConfig(container ->
-        container.addJvmArg(String.format("-Dgemfire.%s=%s", name, value))));
-    return self();
+    return withServerConfiguration(container ->
+        container.addJvmArg(String.format("-Dgemfire.%s=%s", name, value)));
   }
 
   /**
@@ -283,9 +301,30 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    */
   public SELF acceptLicense() {
     addEnv("ACCEPT_EULA", "Y");
-    memberConfigs.forEach(member -> member.addConfig(container -> container
-        .addEnv("ACCEPT_EULA", "Y")));
-    return self();
+    return withServerConfiguration(container -> container
+        .addEnv("ACCEPT_EULA", "Y"));
+  }
+
+  /**
+   * Provide a {@code cache.xml} to be used by each GemFire server on startup.
+   * @param cacheXml
+   */
+  public SELF withCacheXml(String cacheXml) {
+    byte[] rawBytes;
+    try (InputStream is = getClass().getResourceAsStream(cacheXml)) {
+      if (is == null) {
+        throw new RuntimeException("Unable to locate resource: " + cacheXml);
+      }
+      rawBytes = is.readAllBytes();
+    } catch (IOException e) {
+      throw new UncheckedIOException("Unable to read resource: " + cacheXml, e);
+    }
+    String localFile = new String(rawBytes);
+
+    return withServerConfiguration(container -> {
+      container.withCopyToContainer(Transferable.of(localFile), "/cache.xml");
+      container.addJvmArg("-Dgemfire.cache-xml-file=/cache.xml");
+    });
   }
 
   /**

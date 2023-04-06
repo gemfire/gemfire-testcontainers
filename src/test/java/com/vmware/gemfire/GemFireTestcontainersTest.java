@@ -16,6 +16,9 @@ public class GemFireTestcontainersTest {
   public void basicSetupTest() {
     try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
 
+      cluster.withServerConfiguration(container ->
+          container.addJvmArg("-Dcustom.property=true"));
+
       cluster.withClasspath("build");
       cluster.start();
 
@@ -34,6 +37,31 @@ public class GemFireTestcontainersTest {
         region.put(1, "Hello World");
 
         assertThat(region.get(1)).isEqualTo("Hello World");
+      }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      throw ex;
+    }
+  }
+
+  @Test
+  public void testStartWithCacheXml() {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
+
+      cluster.withCacheXml("/test-cache.xml");
+      cluster.start();
+
+      try (ClientCache cache = new ClientCacheFactory()
+          .addPoolLocator("localhost", cluster.getLocatorPort())
+          .create()) {
+
+        Region<Integer, String> region =
+            cache.<Integer, String>createClientRegionFactory(ClientRegionShortcut.PROXY)
+                .create("BAZ");
+
+        region.put(1, "Hello Earth");
+
+        assertThat(region.get(1)).isEqualTo("Hello Earth");
       }
     } catch (Exception ex) {
       ex.printStackTrace();
