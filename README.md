@@ -20,8 +20,8 @@ docker login dev.registry.pivotal.io
 
 # VMware GemFire
 
-Testcontainers can be used to automatically instantiate and manage [VMware GemFire](https://vmware.com/)
-clusters. This is achieved using the official [Docker images](https://hub.docker.com/v/vmware-gemfire) for GemFire.
+Testcontainers can be used to automatically instantiate and manage [VMware GemFire](https://docs.vmware.com/en/VMware-GemFire/index.html)
+clusters. This is enabled using the official [Docker images](https://hub.docker.com/v/vmware-gemfire) for GemFire.
 
 ## Example
 
@@ -59,7 +59,7 @@ Some API calls require targeting a specific server. Servers are numbered startin
 ## GFSH integration
 
 The `gfsh` CLI utility is often used to configure a GemFire cluster. To facilitate this from within 
-Testcontainers, a convenience method is provided to execute arbitrary `gfsh` commands against the
+Testcontainers, a convenience method is provided to execute `gfsh` commands against the
 cluster:
 
 ```java
@@ -67,7 +67,19 @@ cluster:
         "create region --name=ORDERS --type=REPLICATE");
 ```
 
-This, effectively, creates a single script and executes it on the locator instance. The output can optionally be logged.
+This, effectively, creates a single script and executes it on the locator instance. The output can
+optionally be logged. This particular method should only be used once the cluster has started.
+In order to run gfsh commands immediately at startup, you may instead use the `withGfsh` variant.
+This is suitable when the lifecycle of the container is managed separately; for example using a
+Junit `@Rule` annotation. For example:
+
+```java
+    @Rule
+    public void GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()
+        .withGfsh("create region --name=ORDERS --type=PARTITION_REDUNDANT");
+```
+In this case, with the addition of the `@Rule` annotation, Junit would be responsible for the
+lifecycle of the GemFire cluster.
 
 ## Additional configuration
 
@@ -79,12 +91,22 @@ Servers can be configured with specific GemFire parameters:
     cluster.start();
 ```
 
+### Using a cache.xml file
+
+If required, the cluster can be configured with a custom `cache.xml` file. The file is retrieved
+as a resource and, as such, should be present on the classpath. The file is applied to
+all servers on startup.
+
+```java
+    cluster.withCacheXml("/local-test-cache.xml");
+```
+
 ### Classpath additions
 
 One or more local directories may be exposed on the classpath of each member of the cluster:
 
 ```java
-cluster.withClasspath("build/classes/java/main", "out/production/classes");
+    cluster.withClasspath("build/classes/java/main", "out/production/classes");
 ```
 
 This will allow the local directory to be mounted (read-only) within each container and added to
@@ -93,13 +115,13 @@ the classpath.
 ### PDX
 
 PDX can be configured by setting the regular expression of the default `ReflectionBasedAutoSerializer`
-and selecting the 'read serialized' option:
+and selecting the 'read serialized' option as necessary:
 
 ```java
     cluster.withPdx("com.example.*", true);
 ```
 
-More details about PDX can be found [here](https://)
+More details about PDX can be found [here](https://docs.vmware.com/en/VMware-GemFire/10.0/gf/developing-data_serialization-gemfire_pdx_serialization.html)
 
 ### Debugging
 

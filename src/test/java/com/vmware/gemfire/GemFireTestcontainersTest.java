@@ -16,9 +16,6 @@ public class GemFireTestcontainersTest {
   public void testBasicSetup() {
     try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
 
-      cluster.withServerConfiguration(container ->
-          container.addJvmArg("-Dcustom.property=true"));
-
       cluster.withClasspath("build");
       cluster.start();
 

@@ -1,5 +1,6 @@
 package com.vmware.gemfire;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -85,10 +86,10 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   private GemFireProxyContainer proxy;
   private final List<GemFireServerContainer<?>> servers = new ArrayList<>();
-  private String pdxAutoSerializerRegex = null;
-  private boolean pdxReadSerialized;
   private String locatorName;
   private int locatorPort = 0;
+  private Runnable postDeployGfsh = () -> {};
+  private Runnable configurePdxGfsh = () -> {};
 
   /**
    * List that holds configuration for each cluster server.
@@ -175,11 +176,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   @Override
   protected void containerIsStarted(InspectContainerResponse containerInfo) {
-    if (pdxAutoSerializerRegex != null) {
-      logger().info("Configuring PDX");
-      gfsh(true,
-          String.format("configure pdx --disk-store=DEFAULT --read-serialized=%s --auto-serializable-classes=%s", pdxReadSerialized, pdxAutoSerializerRegex));
-    }
+    configurePdxGfsh.run();
 
     proxy = new GemFireProxyContainer(memberConfigs);
     proxy.withNetwork(network);
@@ -194,6 +191,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
       server.start();
       servers.add(server);
     }
+
+    postDeployGfsh.run();
   }
 
   @Override
@@ -313,7 +312,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
       if (is == null) {
         throw new RuntimeException("Unable to locate resource: " + cacheXml);
       }
-      rawBytes = is.readAllBytes();
+      rawBytes = readAllBytes(is);
     } catch (IOException e) {
       throw new UncheckedIOException("Unable to read resource: " + cacheXml, e);
     }
@@ -323,6 +322,16 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
       container.withCopyToContainer(Transferable.of(localFile), "/cache.xml");
       container.addJvmArg("-Dgemfire.cache-xml-file=/cache.xml");
     });
+  }
+
+  private byte[] readAllBytes(InputStream input) throws IOException {
+    byte[] buffer = new byte[8192];
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    int readCount;
+    while ((readCount = input.read(buffer)) != -1) {
+      baos.write(buffer, 0, readCount);
+    }
+    return baos.toByteArray();
   }
 
   /**
@@ -335,8 +344,11 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    *                          {@code PdxInstance}s
    */
   public SELF withPdx(String pdxAutoSerializerRegex, boolean pdxReadSerialized) {
-    this.pdxAutoSerializerRegex = pdxAutoSerializerRegex;
-    this.pdxReadSerialized = pdxReadSerialized;
+    configurePdxGfsh = () -> {
+      logger().info("Configuring PDX");
+      gfsh(true,
+          String.format("configure pdx --disk-store=DEFAULT --read-serialized=%s --auto-serializable-classes=%s", pdxReadSerialized, pdxAutoSerializerRegex));
+    };
     return self();
   }
 
@@ -350,6 +362,23 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    */
   public SELF withLocatorPort(int locatorPort) {
     this.locatorPort = locatorPort;
+    return self();
+  }
+
+  /**
+   * Specifies gfsh commands to run immediately as part of the container / cluster startup. This is
+   * useful when the {@code GemFireClusterContainer} is configured as a test {@code Rule} or
+   * annotated with {@link  org.testcontainers.junit.jupiter.Container}.
+   * <p>
+   * In order to execute gfsh commands after startup, use the {@link #gfsh(boolean, String...)}
+   * method instead.
+   * @param logOutput boolean indicating whether to log output. If the script returns a non-zero
+   *                  error code, the output will always be logged.
+   * @param commands  a list of commands to execute. There is no need to provide an explicit
+   *                  {@code connect} command unless additional parameters are required.
+   */
+  public SELF withGfsh(boolean logOutput, String... commands) {
+    postDeployGfsh = () -> gfsh(logOutput, commands);
     return self();
   }
 
@@ -377,6 +406,9 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    *       "create region --name=FOO --type=REPLICATE",
    *       "describe region --name=FOO");
    * </pre>
+   * <p>
+   * In order to execute gfsh commands as <i>part of startup</i>, use the
+   * {@link #withGfsh(boolean, String...)} method instead.
    *
    * @param logOutput boolean indicating whether to log output. If the script returns a non-zero
    *                  error code, the output will always be logged.

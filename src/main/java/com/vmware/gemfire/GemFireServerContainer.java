@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.Bind;
 import org.testcontainers.utility.DockerImageName;
 
@@ -64,11 +63,9 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
 
     withCreateContainerCmdModifier(cmd -> cmd.withEntrypoint("sh"));
     withCommand("-c", execPart + classpathPart + jvmArgsPart + launcherPart);
+
+    logger().info("Starting GemFire server: {}:{}", config.getServerName(),
+        config.getProxyForwardPort());
   }
 
-  @Override
-  protected void containerIsStarted(InspectContainerResponse containerInfo) {
-    super.containerIsStarted(containerInfo);
-    logger().info("Started GemFire server: {}", containerInfo.getName());
-  }
 }
