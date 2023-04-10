@@ -12,9 +12,12 @@ import org.apache.geode.examples.SimpleSecurityManager;
 
 public class GemFireTestcontainersTest {
 
+  private static final String IMAGE =
+      "dev.registry.pivotal.io/pivotal-gemfire/vmware-gemfire:10.0.0-build.1806-dev_photon4";
+
   @Test
   public void testBasicSetup() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)) {
 
       cluster.withClasspath("build");
       cluster.start();
@@ -43,7 +46,7 @@ public class GemFireTestcontainersTest {
 
   @Test
   public void testStartWithCacheXml() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)) {
 
       cluster.withCacheXml("/test-cache.xml");
       cluster.start();
@@ -68,7 +71,7 @@ public class GemFireTestcontainersTest {
 
   @Test
   public void testWithSecurityManager() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)) {
       cluster.withGemFireProperty("security-manager", SimpleSecurityManager.class.getName());
       cluster.withGemFireProperty("security-username", "cluster");
       cluster.withGemFireProperty("security-password", "cluster");
@@ -98,7 +101,7 @@ public class GemFireTestcontainersTest {
   public void testWithStaticLocatorPort() {
     final int locatorPort = 54321;
 
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)) {
       cluster.withLocatorPort(locatorPort);
       cluster.start();
 

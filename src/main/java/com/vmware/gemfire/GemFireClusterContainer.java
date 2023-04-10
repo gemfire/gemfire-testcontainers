@@ -75,9 +75,6 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
       "-Djava.awt.headless=true",
       "-Dsun.rmi.dgc.server.gcInterval=9223372036854775806");
 
-  private static final String DEFAULT_IMAGE =
-      "dev.registry.pivotal.io/pivotal-gemfire/vmware-gemfire:10.0.0-build.1806-dev_photon4";
-
   private static final int DEFAULT_SERVER_COUNT = 2;
 
   private final Network network;
@@ -95,14 +92,6 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * List that holds configuration for each cluster server.
    */
   private final List<MemberConfig> memberConfigs;
-
-  public GemFireClusterContainer() {
-    this(DEFAULT_SERVER_COUNT, DEFAULT_IMAGE);
-  }
-
-  public GemFireClusterContainer(int serverCount) {
-    this(serverCount, DEFAULT_IMAGE);
-  }
 
   public GemFireClusterContainer(String imageName) {
     this(DEFAULT_SERVER_COUNT, DockerImageName.parse(imageName));
