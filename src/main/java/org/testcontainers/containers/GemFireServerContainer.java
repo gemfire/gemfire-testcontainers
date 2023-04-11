@@ -1,4 +1,4 @@
-package com.vmware.gemfire;
+package org.testcontainers.containers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
