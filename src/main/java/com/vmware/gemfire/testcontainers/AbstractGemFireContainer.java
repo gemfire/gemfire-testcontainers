@@ -1,7 +1,8 @@
-package org.testcontainers.containers;
+package com.vmware.gemfire.testcontainers;
 
 import java.util.List;
 
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 public class AbstractGemFireContainer<SELF extends AbstractGemFireContainer<SELF>>

@@ -1,4 +1,4 @@
-package org.testcontainers.containers;
+package com.vmware.gemfire.testcontainers;
 
 import org.junit.Test;
 

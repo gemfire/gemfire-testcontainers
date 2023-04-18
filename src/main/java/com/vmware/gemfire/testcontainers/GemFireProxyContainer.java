@@ -1,9 +1,10 @@
-package org.testcontainers.containers;
+package com.vmware.gemfire.testcontainers;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
+import org.testcontainers.containers.SocatContainer;
 import org.testcontainers.images.builder.Transferable;
 
 /**
