@@ -1,4 +1,7 @@
 /*
+ *  Copyright (c) VMware, Inc. 2022. All rights reserved.
+ */
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more contributor license
  * agreements. See the NOTICE file distributed with this work for additional information regarding
  * copyright ownership. The ASF licenses this file to You under the Apache License, Version 2.0 (the
@@ -12,6 +15,9 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
+/*
+ * This class is originally from the OSS Geode project.
+ */
 package com.vmware.gemfire.testcontainers;
 
 import java.util.Properties;
@@ -24,7 +30,7 @@ import org.apache.geode.security.AuthenticationFailedException;
 /**
  * An {@link AuthInitialize} implementation that obtains the username and password as the
  * credentials from the given set of properties.
- *
+ * <p>
  * To use this class the {@code security-client-auth-init} property should be set to the fully
  * qualified class name.
  */
@@ -48,12 +54,16 @@ public class UserPasswordAuthInit implements AuthInitialize {
   }
 
   @Override
-  public Properties getCredentials(final Properties securityProperties,
-      final DistributedMember server, final boolean isPeer) throws AuthenticationFailedException {
+  public Properties getCredentials(
+      final Properties securityProperties,
+      final DistributedMember server,
+      final boolean isPeer
+  ) throws AuthenticationFailedException {
     String userName = securityProperties.getProperty(USER_NAME);
     if (userName == null) {
       throw new AuthenticationFailedException(
-          "UserPasswordAuthInit: user name property [" + USER_NAME + "] not set.");
+          "UserPasswordAuthInit: user name property [" + USER_NAME + "] not set."
+      );
     }
 
     String password = securityProperties.getProperty(PASSWORD);
@@ -68,5 +78,6 @@ public class UserPasswordAuthInit implements AuthInitialize {
   }
 
   @Override
-  public void close() {}
+  public void close() {
+  }
 }

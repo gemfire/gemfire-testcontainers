@@ -1,3 +1,7 @@
+/*
+ *  Copyright (c) VMware, Inc. 2022. All rights reserved.
+ */
+
 package com.vmware.gemfire.testcontainers;
 
 import java.io.ByteArrayOutputStream;
@@ -9,9 +13,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
-import com.github.dockerjava.api.model.Bind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
@@ -50,7 +54,8 @@ import org.testcontainers.utility.DockerImageName;
  *   }
  * </pre>
  */
-public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>> extends AbstractGemFireContainer<SELF> {
+public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
+    extends AbstractGemFireContainer<SELF> {
 
   private static final String LOCATOR_NAME_PREFIX = "locator-1";
 
@@ -61,19 +66,11 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   private static final int JMX_PORT = 1099;
 
   private static final List<String> DEFAULT_LOCATOR_JVM_ARGS = Arrays.asList(
-      "-server",
-      "--add-exports=java.management/com.sun.jmx.remote.security=ALL-UNNAMED",
-      "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
-      "--add-opens=java.base/java.lang=ALL-UNNAMED",
-      "--add-opens=java.base/java.nio=ALL-UNNAMED",
       "-Dgemfire.use-cluster-configuration=true",
-      "-Dgemfire.log-level=info",
       "-Dgemfire.http-service-port=7070",
       "-Dgemfire.jmx-manager-start=true",
-      "-XX:OnOutOfMemoryError=kill",
-      "-Dgemfire.launcher.registerSignalHandlers=true",
-      "-Djava.awt.headless=true",
-      "-Dsun.rmi.dgc.server.gcInterval=9223372036854775806");
+      "-Dgemfire.standard-output-always-on=true"
+  );
 
   private static final int DEFAULT_SERVER_COUNT = 2;
 
@@ -117,9 +114,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
       memberConfigs.add(config);
     }
 
-    network = Network.builder()
-        .createNetworkCmdModifier(it -> it.withName("gemfire-cluster-" + suffix))
-        .build();
+    network =
+        Network.builder().createNetworkCmdModifier(it -> it.withName("gemfire-" + suffix)).build();
     withNetwork(network);
   }
 
@@ -143,24 +139,18 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     // Once the locator port is established, update the MemberConfigs
     memberConfigs.forEach(m -> m.setLocatorHostPort(locatorName, locatorPort));
 
-    String execPart =
-        "export BOOTSTRAP_JAR=$(basename /gemfire/lib/gemfire-bootstrap-*.jar); exec java ";
-
-    String classpathPart = "-classpath /gemfire/lib/${BOOTSTRAP_JAR}";
-    for (Bind bind : getBinds()) {
-      classpathPart = classpathPart + ":" + bind.getVolume().getPath();
-    }
-    classpathPart += " ";
-
-    String launcherPart = " com.vmware.gemfire.bootstrap.LocatorLauncher start " + locatorName +
-        " --automatic-module-classpath=/gemfire/extensions/*" +
-        " --port=" + locatorPort +
-        " --hostname-for-clients=localhost";
+    String classpathPart = getBinds()
+        .stream()
+        .map(bind -> bind.getVolume().getPath())
+        .collect(Collectors.joining(":"));
 
     String jvmArgsPart = String.join(" ", jvmArgs);
 
-    withCreateContainerCmdModifier(cmd -> cmd.withEntrypoint("sh"));
-    withCommand("-c", execPart + classpathPart + jvmArgsPart + launcherPart);
+    addEnv("CLASSPATH", classpathPart);
+    addEnv("JVM_ARGS", jvmArgsPart);
+
+    withCommand("locator", locatorName, "--port=" + locatorPort,
+        "--hostname-for-clients=localhost");
   }
 
   @Override
@@ -203,6 +193,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    *   cluster.withServerConfiguration(container ->
    *       container.addJvmArg("-Dcustom.property=true"));
    * </pre>
+   *
    * @param config the configuration that is applied before container startup
    */
   public SELF withServerConfiguration(Consumer<AbstractGemFireContainer<?>> config) {
@@ -213,6 +204,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   /**
    * The provided consumer is applied to this container, (effectively the locator), and all
    * additional GemFire server containers managed by this instance.
+   *
    * @param consumer consumer that output frames should be sent to
    */
   @Override
@@ -229,6 +221,9 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    *                   added to the classpath of the started JVM instance.
    */
   public SELF withClasspath(String... classpaths) {
+    for (int i = 0; i < classpaths.length; i++) {
+      addFileSystemBind(classpaths[i], "/classpath/" + i, BindMode.READ_ONLY);
+    }
     return withServerConfiguration(container -> {
       for (int i = 0; i < classpaths.length; i++) {
         container.addFileSystemBind(classpaths[i], "/classpath/" + i, BindMode.READ_ONLY);
@@ -245,7 +240,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * @param value       the value of the property to set
    */
   public SELF withGemFireProperty(int serverIndex, String name, String value) {
-    memberConfigs.get(serverIndex)
+    memberConfigs
+        .get(serverIndex)
         .addConfig(container -> container.addJvmArg(String.format("-Dgemfire.%s=%s", name, value)));
     return self();
   }
@@ -254,14 +250,15 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * Add the property to all GemFire members - this includes both the locator and all servers.
    * The property is set as a GemFire java system property and will automatically be prefixed with
    * '{@code gemfire.}'.
-   * @param name        the name of the property. The property need not be prefixed with
-   *                    {@code gemfire.}
-   * @param value       the value of the property to set
+   *
+   * @param name  the name of the property. The property need not be prefixed with
+   *              {@code gemfire.}
+   * @param value the value of the property to set
    */
   public SELF withGemFireProperty(String name, String value) {
     addJvmArg(String.format("-Dgemfire.%s=%s", name, value));
-    return withServerConfiguration(container ->
-        container.addJvmArg(String.format("-Dgemfire.%s=%s", name, value)));
+    return withServerConfiguration(
+        container -> container.addJvmArg(String.format("-Dgemfire.%s=%s", name, value)));
   }
 
   /**
@@ -272,12 +269,14 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * @param port        the port to use for debugging.
    */
   public SELF withDebugPort(int serverIndex, int port) {
-    memberConfigs.get(serverIndex).addConfig(container -> {
-      container.setPortBindings(Collections.singletonList(String.format("%d:%d", port, port)));
-      container.addJvmArg(
-          "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:" + port);
-      System.err.println("Waiting for debugger to connect on port " + port);
-    });
+    memberConfigs
+        .get(serverIndex)
+        .addConfig(container -> {
+          container.setPortBindings(Collections.singletonList(String.format("%d:%d", port, port)));
+          container.addJvmArg(
+              "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:" + port);
+          System.err.println("Waiting for debugger to connect on port " + port);
+        });
     return self();
   }
 
@@ -286,13 +285,13 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * variable as described at [someplace to be decided...]
    */
   public SELF acceptLicense() {
-    addEnv("ACCEPT_EULA", "Y");
-    return withServerConfiguration(container -> container
-        .addEnv("ACCEPT_EULA", "Y"));
+    addEnv("ACCEPT_TERMS", "y");
+    return withServerConfiguration(container -> container.addEnv("ACCEPT_TERMS", "y"));
   }
 
   /**
    * Provide a {@code cache.xml} to be used by each GemFire server on startup.
+   *
    * @param cacheXml
    */
   public SELF withCacheXml(String cacheXml) {
@@ -327,17 +326,25 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * Configure PDX. This would typically need to happen after the locator starts but before
    * servers start. To facilitate that, the configuration is provided with this API before the
    * cluster is started.
+   *
    * @param pdxAutoSerializerRegex the regex that defines classes to be considered for PDX
    *                               serialization
-   * @param pdxReadSerialized boolean that determines whether values are retrieved as
-   *                          {@code PdxInstance}s
+   * @param pdxReadSerialized      boolean that determines whether values are retrieved as
+   *                               {@code PdxInstance}s
    */
   public SELF withPdx(String pdxAutoSerializerRegex, boolean pdxReadSerialized) {
-    configurePdxGfsh = () -> {
-      logger().info("Configuring PDX");
-      gfsh(true,
-          String.format("configure pdx --disk-store=DEFAULT --read-serialized=%s --auto-serializable-classes=%s", pdxReadSerialized, pdxAutoSerializerRegex));
-    };
+    configurePdxGfsh =
+        () -> {
+          logger().info("Configuring PDX");
+          gfsh(
+              true,
+              String.format(
+                  "configure pdx --disk-store=DEFAULT --read-serialized=%s --auto-serializable-classes=%s",
+                  pdxReadSerialized,
+                  pdxAutoSerializerRegex
+              )
+          );
+        };
     return self();
   }
 
@@ -347,6 +354,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * Under most circumstances, the locator's  port can be ephemeral and a test can simply use
    * {@link #getLocatorPort()} to retrieve it. At other times it may be necessary to explicitly
    * provide the port for the locator to use which is when this API should be used.
+   *
    * @param locatorPort the port to expose for the locator
    */
   public SELF withLocatorPort(int locatorPort) {
@@ -361,6 +369,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * <p>
    * In order to execute gfsh commands after startup, use the {@link #gfsh(boolean, String...)}
    * method instead.
+   *
    * @param logOutput boolean indicating whether to log output. If the script returns a non-zero
    *                  error code, the output will always be logged.
    * @param commands  a list of commands to execute. There is no need to provide an explicit
@@ -439,11 +448,10 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     }
 
     if (result.getExitCode() != 0) {
-      throw new RuntimeException("Error executing gfsh command. Return code: " +
-          result.getExitCode());
+      throw new RuntimeException(
+          "Error executing gfsh command. Return code: " + result.getExitCode());
     }
 
     return result.toString();
   }
-
 }

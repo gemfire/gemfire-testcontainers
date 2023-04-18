@@ -1,3 +1,7 @@
+/*
+ *  Copyright (c) VMware, Inc. 2022. All rights reserved.
+ */
+
 package com.vmware.gemfire.testcontainers;
 
 import java.util.ArrayList;
@@ -22,7 +26,6 @@ public class GemFireProxyContainer extends SocatContainer {
 
   public GemFireProxyContainer(List<MemberConfig> serverConfigs) {
     super();
-
     this.serverConfigs = serverConfigs;
 
     for (int i = 0; i < serverConfigs.size(); i++) {
@@ -34,7 +37,8 @@ public class GemFireProxyContainer extends SocatContainer {
 
   @Override
   public void configure() {
-    withCommand("-c", "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; " + STARTER_SCRIPT);
+    withCommand("-c",
+        "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; " + STARTER_SCRIPT);
   }
 
   @Override
@@ -46,8 +50,14 @@ public class GemFireProxyContainer extends SocatContainer {
       int mappedPort = getMappedPort(internalPort);
       config.setProxyForwardPort(mappedPort);
 
-      socats.add(String.format("socat TCP-LISTEN:%d,fork,reuseaddr TCP:%s:%d", internalPort,
-          config.getServerName(), mappedPort));
+      socats.add(
+          String.format(
+              "socat TCP-LISTEN:%d,fork,reuseaddr TCP:%s:%d",
+              internalPort,
+              config.getServerName(),
+              mappedPort
+          )
+      );
     }
 
     String command = "#!/bin/sh\n";
@@ -55,5 +65,4 @@ public class GemFireProxyContainer extends SocatContainer {
 
     copyFileToContainer(Transferable.of(command, 0777), STARTER_SCRIPT);
   }
-
 }

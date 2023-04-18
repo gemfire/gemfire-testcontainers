@@ -1,3 +1,7 @@
+/*
+ *  Copyright (c) VMware, Inc. 2022. All rights reserved.
+ */
+
 package com.vmware.gemfire.testcontainers;
 
 import java.util.List;
@@ -14,7 +18,8 @@ public class AbstractGemFireContainer<SELF extends AbstractGemFireContainer<SELF
     super(image);
   }
 
-  public void addJvmArg(String arg) {
+  protected void addJvmArg(String arg) {
     jvmArgs.add(arg);
   }
+
 }

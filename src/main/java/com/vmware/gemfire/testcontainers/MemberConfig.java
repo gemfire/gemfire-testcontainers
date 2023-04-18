@@ -1,3 +1,7 @@
+/*
+ *  Copyright (c) VMware, Inc. 2022. All rights reserved.
+ */
+
 package com.vmware.gemfire.testcontainers;
 
 import java.util.ArrayList;
@@ -57,5 +61,4 @@ class MemberConfig {
   public int getLocatorPort() {
     return locatorPort;
   }
-
 }
