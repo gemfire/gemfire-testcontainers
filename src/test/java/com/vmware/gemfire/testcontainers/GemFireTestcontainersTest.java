@@ -31,16 +31,13 @@ public class GemFireTestcontainersTest {
       cluster.acceptLicense();
       cluster.start();
 
-      // gfshUsage {
       cluster.gfsh(
           true,
           "list members",
           "create region --name=FOO --type=REPLICATE",
           "describe region --name=FOO"
       );
-      // }
 
-      // connectUsingLocator {
       try (
           ClientCache cache = new ClientCacheFactory()
               .addPoolLocator("localhost", cluster.getLocatorPort())
@@ -54,16 +51,13 @@ public class GemFireTestcontainersTest {
 
         assertThat(region.get(1)).isEqualTo("Hello World");
       }
-      // }
     }
   }
 
   @Test
   public void testStartWithCacheXml() {
     try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)) {
-      // withCacheXml {
       cluster.withCacheXml("/test-cache.xml");
-      // }
       cluster.acceptLicense();
       cluster.start();
 
@@ -86,13 +80,8 @@ public class GemFireTestcontainersTest {
   @Test
   public void testWithSecurityManagerOnClasspath() {
     try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)) {
-      // withGemFireProperty {
       cluster.withGemFireProperty("security-manager", SimpleSecurityManager.class.getName());
-      // }
-      // These paths should work for running using gradle CLI as well as with IntelliJ
-      // withClasspath {
       cluster.withClasspath("build/classes/java/test", "out/test/classes");
-      // }
       cluster
           .withGemFireProperty("security-username", "cluster")
           .withGemFireProperty("security-password", "cluster")

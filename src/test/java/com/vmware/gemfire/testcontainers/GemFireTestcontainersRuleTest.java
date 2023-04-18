@@ -18,13 +18,10 @@ public class GemFireTestcontainersRuleTest {
 
   private static final String IMAGE = "gemfire/gemfire:latest";
 
-  // gemfireRule {
   @Rule
   public GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)
       .acceptLicense()
       .withGfsh(true, "create region --name=BAZ --type=REPLICATE");
-
-  // }
 
   @Test
   public void testSetupWithRule() {
