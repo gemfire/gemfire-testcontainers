@@ -15,7 +15,7 @@ import org.apache.geode.cache.client.ClientRegionShortcut;
 
 public class GemFireTestcontainersTest {
 
-  private static final String IMAGE = "gemfire/gemfire:9.15.5";
+  private static final String IMAGE = "gemfire/gemfire:9.15.6";
 
   @Test
   public void testBasicSetup() {

@@ -15,10 +15,9 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
     extends AbstractGemFireContainer<SELF> {
 
   private static final List<String> DEFAULT_JVM_ARGS = Arrays.asList(
-      "-Dgemfire.use-cluster-configuration=true",
-      "-Dgemfire.log-file=",
-      "-Dgemfire.locator-wait-time=120",
-      "-Dgemfire.standard-output-always-on=true"
+      "--J=-Dgemfire.use-cluster-configuration=true",
+      "--J=-Dgemfire.locator-wait-time=120",
+      "--hostname-for-clients=localhost"
   );
 
   public GemFireServerContainer(MemberConfig config, String imageName) {
@@ -34,27 +33,29 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
     // This is just so that TC can use the mapped port for the initial wait strategy.
     withExposedPorts(config.getProxyForwardPort());
 
-    String locator = String.format("%s[%d]", config.getLocatorHost(), config.getLocatorPort());
-    jvmArgs.add("-Dgemfire.locators=" + locator);
+    jvmArgs.add(String.format("--J=-Dgemfire.locators=%s[%d]",
+        config.getLocatorHost(), config.getLocatorPort()));
 
     config.apply(this);
+
+    List<String> command = new ArrayList<>();
+    command.add("gfsh");
+    command.add("start");
+    command.add("server");
+    command.add("--name=" + config.getServerName());
+    command.add("--server-port=" + config.getProxyForwardPort());
+    command.addAll(jvmArgs);
 
     String classpathPart = getBinds()
         .stream()
         .map(bind -> bind.getVolume().getPath())
         .collect(Collectors.joining(":"));
 
-    String jvmArgsPart = String.join(" ", jvmArgs);
+    if (!classpathPart.isEmpty()) {
+      command.add("--classpath=" + classpathPart);
+    }
 
-    addEnv("CLASSPATH", classpathPart);
-    addEnv("JVM_ARGS", jvmArgsPart);
-
-    withCommand(
-        "server",
-        config.getServerName(),
-        "--server-port=" + config.getProxyForwardPort(),
-        "--hostname-for-clients=localhost"
-    );
+    withCommand(command.toArray(new String[]{}));
 
     logger().info("Starting GemFire server: {}:{}", config.getServerName(),
         config.getProxyForwardPort());

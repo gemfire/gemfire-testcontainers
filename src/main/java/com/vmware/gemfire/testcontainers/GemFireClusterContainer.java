@@ -65,11 +65,11 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   private static final int JMX_PORT = 1099;
 
-  private static final List<String> DEFAULT_LOCATOR_JVM_ARGS = Arrays.asList(
-      "-Dgemfire.use-cluster-configuration=true",
-      "-Dgemfire.http-service-port=7070",
-      "-Dgemfire.jmx-manager-start=true",
-      "-Dgemfire.standard-output-always-on=true"
+  private static final List<String> DEFAULT_LOCATOR_ARGS = Arrays.asList(
+      "--J=-Dgemfire.use-cluster-configuration=true",
+      "--J=-Dgemfire.http-service-port=7070",
+      "--J=-Dgemfire.jmx-manager-start=true",
+      "--hostname-for-clients=localhost"
   );
 
   private static final int DEFAULT_SERVER_COUNT = 2;
@@ -104,7 +104,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     this.suffix = Base58.randomString(6);
 
     locatorName = LOCATOR_NAME_PREFIX + "-" + suffix;
-    jvmArgs = new ArrayList<>(DEFAULT_LOCATOR_JVM_ARGS);
+    jvmArgs = new ArrayList<>(DEFAULT_LOCATOR_ARGS);
 
     memberConfigs = new ArrayList<>(serverCount);
     for (int i = 0; i < serverCount; i++) {
@@ -139,18 +139,24 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     // Once the locator port is established, update the MemberConfigs
     memberConfigs.forEach(m -> m.setLocatorHostPort(locatorName, locatorPort));
 
+    List<String> command = new ArrayList<>();
+    command.add("gfsh");
+    command.add("start");
+    command.add("locator");
+    command.add("--name=" + locatorName);
+    command.add("--port=" + locatorPort);
+    command.addAll(jvmArgs);
+
     String classpathPart = getBinds()
         .stream()
         .map(bind -> bind.getVolume().getPath())
         .collect(Collectors.joining(":"));
 
-    String jvmArgsPart = String.join(" ", jvmArgs);
+    if (!classpathPart.isEmpty()) {
+      command.add("--classpath=" + classpathPart);
+    }
 
-    addEnv("CLASSPATH", classpathPart);
-    addEnv("JVM_ARGS", jvmArgsPart);
-
-    withCommand("locator", locatorName, "--port=" + locatorPort,
-        "--hostname-for-clients=localhost");
+    withCommand(command.toArray(new String[]{}));
   }
 
   @Override
@@ -191,7 +197,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * For example:
    * <pre>
    *   cluster.withServerConfiguration(container ->
-   *       container.addJvmArg("-Dcustom.property=true"));
+   *       container.addJvmArg("--J=-Dcustom.property=true"));
    * </pre>
    *
    * @param config the configuration that is applied before container startup
@@ -242,7 +248,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   public SELF withGemFireProperty(int serverIndex, String name, String value) {
     memberConfigs
         .get(serverIndex)
-        .addConfig(container -> container.addJvmArg(String.format("-Dgemfire.%s=%s", name, value)));
+        .addConfig(container -> container.addJvmArg(String.format("--J=-Dgemfire.%s=%s", name, value)));
     return self();
   }
 
@@ -256,9 +262,9 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * @param value the value of the property to set
    */
   public SELF withGemFireProperty(String name, String value) {
-    addJvmArg(String.format("-Dgemfire.%s=%s", name, value));
+    addJvmArg(String.format("--J=-Dgemfire.%s=%s", name, value));
     return withServerConfiguration(
-        container -> container.addJvmArg(String.format("-Dgemfire.%s=%s", name, value)));
+        container -> container.addJvmArg(String.format("--J=-Dgemfire.%s=%s", name, value)));
   }
 
   /**
@@ -274,7 +280,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
         .addConfig(container -> {
           container.setPortBindings(Collections.singletonList(String.format("%d:%d", port, port)));
           container.addJvmArg(
-              "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:" + port);
+              "--J=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:" + port);
           System.err.println("Waiting for debugger to connect on port " + port);
         });
     return self();
@@ -308,7 +314,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
     return withServerConfiguration(container -> {
       container.withCopyToContainer(Transferable.of(localFile), "/cache.xml");
-      container.addJvmArg("-Dgemfire.cache-xml-file=/cache.xml");
+      container.addJvmArg("--J=-Dgemfire.cache-xml-file=/cache.xml");
     });
   }
 
