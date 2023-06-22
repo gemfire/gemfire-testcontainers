@@ -4,6 +4,7 @@
 
 package com.vmware.gemfire.testcontainers;
 
+import static com.vmware.gemfire.testcontainers.GemFireClusterContainer.DEFAULT_IMAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
@@ -15,11 +16,9 @@ import org.apache.geode.cache.client.ClientRegionShortcut;
 
 public class GemFireTestcontainersTest {
 
-  private static final String IMAGE = "gemfire/gemfire:9.15.6";
-
   @Test
   public void testBasicSetup() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(DEFAULT_IMAGE)) {
       cluster.acceptLicense();
       cluster.start();
     }
@@ -27,7 +26,7 @@ public class GemFireTestcontainersTest {
 
   @Test
   public void testSetupWithGfsh() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(DEFAULT_IMAGE)) {
       cluster.acceptLicense();
       cluster.start();
 
@@ -56,7 +55,7 @@ public class GemFireTestcontainersTest {
 
   @Test
   public void testStartWithCacheXml() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(DEFAULT_IMAGE)) {
       cluster.withCacheXml("/test-cache.xml");
       cluster.acceptLicense();
       cluster.start();
@@ -79,7 +78,7 @@ public class GemFireTestcontainersTest {
 
   @Test
   public void testWithSecurityManagerOnClasspath() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(DEFAULT_IMAGE)) {
       cluster.withGemFireProperty("security-manager", SimpleSecurityManager.class.getName());
       cluster.withClasspath("build/classes/java/test", "out/test/classes");
       cluster
@@ -113,7 +112,7 @@ public class GemFireTestcontainersTest {
   public void testWithStaticLocatorPort() {
     final int locatorPort = 54321;
 
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(DEFAULT_IMAGE)) {
       cluster.withLocatorPort(locatorPort);
       cluster.acceptLicense();
       cluster.start();

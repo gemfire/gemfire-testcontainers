@@ -57,6 +57,8 @@ import org.testcontainers.utility.DockerImageName;
 public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     extends AbstractGemFireContainer<SELF> {
 
+  public static final String DEFAULT_IMAGE = "gemfire/gemfire:9.15.6";
+
   private static final String LOCATOR_NAME_PREFIX = "locator-1";
 
   private static final int LOCATOR_PORT = 10334;
@@ -80,7 +82,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   private GemFireProxyContainer proxy;
   private final List<GemFireServerContainer<?>> servers = new ArrayList<>();
-  private String locatorName;
+  private final String locatorName;
   private int locatorPort = 0;
   private Runnable postDeployGfsh = () -> {};
   private Runnable configurePdxGfsh = () -> {};
@@ -168,8 +170,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     // Once the proxy has started, all the forwarding ports, for each MemberConfig, will be set.
     proxy.start();
 
-    for (int i = 0; i < memberConfigs.size(); i++) {
-      MemberConfig config = memberConfigs.get(i);
+    for (MemberConfig config : memberConfigs) {
       GemFireServerContainer<?> server = new GemFireServerContainer<>(config, image);
       server.withNetwork(network);
 
@@ -371,7 +372,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   /**
    * Specifies gfsh commands to run immediately as part of the container / cluster startup. This is
    * useful when the {@code GemFireClusterContainer} is configured as a test {@code Rule} or
-   * annotated with {@link  org.testcontainers.junit.jupiter.Container}.
+   * annotated with {@code  org.testcontainers.junit.jupiter.Container}.
    * <p>
    * In order to execute gfsh commands after startup, use the {@link #gfsh(boolean, String...)}
    * method instead.

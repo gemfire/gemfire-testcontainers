@@ -20,10 +20,6 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
       "--hostname-for-clients=localhost"
   );
 
-  public GemFireServerContainer(MemberConfig config, String imageName) {
-    this(config, DockerImageName.parse(imageName));
-  }
-
   public GemFireServerContainer(MemberConfig config, DockerImageName image) {
     super(image);
     jvmArgs = new ArrayList<>(DEFAULT_JVM_ARGS);

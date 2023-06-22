@@ -4,6 +4,7 @@
 
 package com.vmware.gemfire.testcontainers;
 
+import static com.vmware.gemfire.testcontainers.GemFireClusterContainer.DEFAULT_IMAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Rule;
@@ -16,10 +17,8 @@ import org.apache.geode.cache.client.ClientRegionShortcut;
 
 public class GemFireTestcontainersRuleTest {
 
-  private static final String IMAGE = "gemfire/gemfire:latest";
-
   @Rule
-  public GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)
+  public GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(DEFAULT_IMAGE)
       .acceptLicense()
       .withGfsh(true, "create region --name=BAZ --type=REPLICATE");
 
