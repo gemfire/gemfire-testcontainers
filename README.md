@@ -131,7 +131,8 @@ In order to build and test this code, you will need to register an account on th
 GemFire repo: https://commercial-repo.pivotal.io/data3/gemfire-release-repo/gemfire. This will give
 access to the necessary GemFire bits.
 
-Add your credentials to the placeholder properties in `gradle.properties`.
+When building, the credentials must be provided via the environment variables
+`COMMERCIAL_MAVEN_USERNAME` and `COMMERCIAL_MAVEN_PASSWORD`.
 
 You will also need to login to Tanzunet / Harbor in order to pull the GemFire image:
 
