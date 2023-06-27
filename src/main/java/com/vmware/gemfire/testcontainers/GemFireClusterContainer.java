@@ -32,7 +32,7 @@ import org.testcontainers.utility.DockerImageName;
  * <p>
  * Example:
  * <pre>
- *   try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
+ *   try (GemFireClusterContainer&lt;?&gt; cluster = new GemFireClusterContainer&lt;&gt;()) {
  *     cluster.acceptLicense();
  *     cluster.start();
  *
@@ -44,8 +44,8 @@ import org.testcontainers.utility.DockerImageName;
  *         .addPoolLocator("localhost", cluster.getLocatorPort())
  *         .create();
  *
- *     Region<Integer, String> region =
- *         cache.<Integer, String>createClientRegionFactory(ClientRegionShortcut.PROXY)
+ *     Region&lt;Integer, String&gt; region =
+ *         cache.&lt;Integer, String&gt;createClientRegionFactory(ClientRegionShortcut.PROXY)
  *             .create("FOO");
  *
  *     region.put(1, "Hello World");
@@ -197,11 +197,12 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * <p>
    * For example:
    * <pre>
-   *   cluster.withServerConfiguration(container ->
+   *   cluster.withServerConfiguration(container -&gt;
    *       container.addJvmArg("--J=-Dcustom.property=true"));
    * </pre>
    *
    * @param config the configuration that is applied before container startup
+   * @return this
    */
   public SELF withServerConfiguration(Consumer<AbstractGemFireContainer<?>> config) {
     memberConfigs.forEach(member -> member.addConfig(config));
@@ -213,6 +214,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * additional GemFire server containers managed by this instance.
    *
    * @param consumer consumer that output frames should be sent to
+   * @return this
    */
   @Override
   public SELF withLogConsumer(Consumer<OutputFrame> consumer) {
@@ -226,6 +228,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * @param classpaths which are resolved to absolute paths and then bind-mounted in each container
    *                   at the location {@code /classpath/0, /classpath/1, etc.}. These paths are
    *                   added to the classpath of the started JVM instance.
+   * @return this
    */
   public SELF withClasspath(String... classpaths) {
     for (int i = 0; i < classpaths.length; i++) {
@@ -245,6 +248,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * @param name        the name of the property. The property will automatically be prefixed with
    *                    {@code gemfire.}
    * @param value       the value of the property to set
+   * @return this
    */
   public SELF withGemFireProperty(int serverIndex, String name, String value) {
     memberConfigs
@@ -261,6 +265,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * @param name  the name of the property. The property need not be prefixed with
    *              {@code gemfire.}
    * @param value the value of the property to set
+   * @return this
    */
   public SELF withGemFireProperty(String name, String value) {
     addJvmArg(String.format("--J=-Dgemfire.%s=%s", name, value));
@@ -274,6 +279,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    *
    * @param serverIndex the instance to target. Instances are numbered from 1.
    * @param port        the port to use for debugging.
+   * @return this
    */
   public SELF withDebugPort(int serverIndex, int port) {
     memberConfigs
@@ -290,6 +296,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   /**
    * Accepts the license for the GemFire container by setting the ACCEPT_EULA=Y
    * variable as described at [someplace to be decided...]
+   *
+   * @return this
    */
   public SELF acceptLicense() {
     addEnv("ACCEPT_TERMS", "y");
@@ -297,9 +305,11 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   }
 
   /**
-   * Provide a {@code cache.xml} to be used by each GemFire server on startup.
+   * Provide a {@code cache.xml} to be used by each GemFire server on startup. This files needs
+   * to be a class resource.
    *
-   * @param cacheXml
+   * @param cacheXml the cache xml file to use
+   * @return this
    */
   public SELF withCacheXml(String cacheXml) {
     byte[] rawBytes;
@@ -338,6 +348,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    *                               serialization
    * @param pdxReadSerialized      boolean that determines whether values are retrieved as
    *                               {@code PdxInstance}s
+   * @return this
    */
   public SELF withPdx(String pdxAutoSerializerRegex, boolean pdxReadSerialized) {
     configurePdxGfsh =
@@ -363,6 +374,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * provide the port for the locator to use which is when this API should be used.
    *
    * @param locatorPort the port to expose for the locator
+   * @return this
    */
   public SELF withLocatorPort(int locatorPort) {
     this.locatorPort = locatorPort;
@@ -381,6 +393,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    *                  error code, the output will always be logged.
    * @param commands  a list of commands to execute. There is no need to provide an explicit
    *                  {@code connect} command unless additional parameters are required.
+   * @return this
    */
   public SELF withGfsh(boolean logOutput, String... commands) {
     postDeployGfsh = () -> gfsh(logOutput, commands);
@@ -390,6 +403,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   /**
    * Return the port at which the locator is listening. This would be used to configure a
    * GemFire client to connect.
+   *
+   * @return the locator port
    */
   public int getLocatorPort() {
     return getMappedPort(locatorPort);
@@ -397,6 +412,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   /**
    * Return the port that can be used to connect {@code gfsh} over HTTP.
+   *
+   * @return the http port for gfsh connections
    */
   public int getHttpPort() {
     return getMappedPort(HTTP_PORT);

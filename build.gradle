@@ -15,14 +15,53 @@ repositories {
   maven {
     name = 'PivotalRepository'
     url = uri('https://commercial-repo.pivotal.io/data3/gemfire-release-repo/gemfire')
-    credentials(PasswordCredentials)
+    credentials {
+      username = System.getenv("COMMERCIAL_MAVEN_USERNAME")
+      password = System.getenv("COMMERCIAL_MAVEN_PASSWORD")
+    }
   }
 }
 
 publishing {
   publications {
     maven(MavenPublication) {
+      pom {
+        name = "${project.group}:${project.name}"
+        description = 'Provide integration of GemFire and Testcontainers'
+        url = 'https://github.com/gemfire/gemfire-testcontainers'
+        developers {
+          developer {
+            name = 'Jens Deppe'
+            email = 'jdeppe@vmware.com'
+            organization= 'VMware'
+            organizationUrl = 'https://vmware.com'
+          }
+        }
+        licenses {
+          license {
+            name = 'The Apache License, Version 2.0'
+            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+          }
+        }
+        scm {
+          url = 'https://github.com/gemfire/gemfire-testcontainers'
+          connection = 'scm:git:git://github.com/gemfire/gemfire-testcontainers.git'
+          developerConnection = 'scm:git:ssh://github.com:gemfire/gemfire-testcontainers.git'
+        }
+      }
+
       from components.java
+    }
+  }
+
+  repositories {
+    maven {
+      name = "OSSRH"
+      url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+      credentials {
+        username = System.getenv("MAVEN_USERNAME")
+        password = System.getenv("MAVEN_PASSWORD")
+      }
     }
   }
 }
@@ -37,6 +76,7 @@ dependencies {
 
 java {
   withSourcesJar()
+  withJavadocJar()
 }
 
 test {
