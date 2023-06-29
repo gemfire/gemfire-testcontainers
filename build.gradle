@@ -2,6 +2,7 @@ plugins {
   id 'java'
   id 'maven-publish'
   id 'java-library'
+  id 'signing'
 }
 
 targetCompatibility = '1.8'
@@ -81,4 +82,11 @@ java {
 
 test {
   useJUnit()
+}
+
+signing {
+  def signingKey = findProperty("signingKey")
+  def signingPassword = findProperty("signingPassword")
+  useInMemoryPgpKeys(signingKey, signingPassword)
+  sign publishing.publications.maven
 }
