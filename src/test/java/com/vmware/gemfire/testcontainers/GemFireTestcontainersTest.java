@@ -4,7 +4,6 @@
 
 package com.vmware.gemfire.testcontainers;
 
-import static com.vmware.gemfire.testcontainers.GemFireClusterContainer.DEFAULT_IMAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
@@ -18,7 +17,7 @@ public class GemFireTestcontainersTest {
 
   @Test
   public void testBasicSetup() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(DEFAULT_IMAGE)) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
       cluster.acceptLicense();
       cluster.start();
     }
@@ -26,7 +25,7 @@ public class GemFireTestcontainersTest {
 
   @Test
   public void testSetupWithGfsh() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(DEFAULT_IMAGE)) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
       cluster.acceptLicense();
       cluster.start();
 
@@ -55,7 +54,7 @@ public class GemFireTestcontainersTest {
 
   @Test
   public void testStartWithCacheXml() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(DEFAULT_IMAGE)) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
       cluster.withCacheXml("/test-cache.xml");
       cluster.acceptLicense();
       cluster.start();
@@ -78,10 +77,9 @@ public class GemFireTestcontainersTest {
 
   @Test
   public void testWithSecurityManagerOnClasspath() {
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(DEFAULT_IMAGE)) {
-      cluster.withGemFireProperty("security-manager", SimpleSecurityManager.class.getName());
-      cluster.withClasspath("build/classes/java/test", "out/test/classes");
-      cluster
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
+      cluster.withClasspath("build/classes/java/test", "out/test/classes")
+          .withGemFireProperty("security-manager", SimpleSecurityManager.class.getName())
           .withGemFireProperty("security-username", "cluster")
           .withGemFireProperty("security-password", "cluster")
           .acceptLicense()
@@ -112,7 +110,7 @@ public class GemFireTestcontainersTest {
   public void testWithStaticLocatorPort() {
     final int locatorPort = 54321;
 
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(DEFAULT_IMAGE)) {
+    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
       cluster.withLocatorPort(locatorPort);
       cluster.acceptLicense();
       cluster.start();

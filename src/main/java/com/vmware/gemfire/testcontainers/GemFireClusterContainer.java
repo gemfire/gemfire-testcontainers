@@ -92,6 +92,10 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    */
   private final List<MemberConfig> memberConfigs;
 
+  public GemFireClusterContainer() {
+    this(DEFAULT_IMAGE);
+  }
+
   public GemFireClusterContainer(String imageName) {
     this(DEFAULT_SERVER_COUNT, DockerImageName.parse(imageName));
   }
