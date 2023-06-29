@@ -1,4 +1,4 @@
-# VMware GemFire
+# VMware GemFire Testcontainers Integration
 
 Testcontainers can be used to automatically instantiate and manage [VMware GemFire](https://docs.vmware.com/en/VMware-GemFire/index.html)
 clusters. This is enabled using the official [Docker images](https://hub.docker.com/v/vmware-gemfire) for GemFire.
@@ -134,14 +134,14 @@ access to the necessary GemFire bits.
 When building, the credentials must be provided via the environment variables
 `COMMERCIAL_MAVEN_USERNAME` and `COMMERCIAL_MAVEN_PASSWORD`.
 
-You will also need to login to Tanzunet / Harbor in order to pull the GemFire image:
+You will also need an account on, and login to Tanzunet / Harbor, in order to pull the GemFire image:
 
 ```shell
 docker login dev.registry.pivotal.io
 ```
 
-Now you will be ready to build, test and publish:
+Now you will be ready to build and test:
 
 ```shell
-./gradlew build publishToMavenLocal
+./gradlew build
 ```
