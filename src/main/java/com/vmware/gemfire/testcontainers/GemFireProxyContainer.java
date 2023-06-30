@@ -48,7 +48,7 @@ public class GemFireProxyContainer extends SocatContainer {
       MemberConfig config = serverConfigs.get(i);
       int internalPort = config.getProxyListenPort();
       int mappedPort = getMappedPort(internalPort);
-      config.setProxyForwardPort(mappedPort);
+      config.setProxyPublicPort(mappedPort);
 
       socats.add(
           String.format(

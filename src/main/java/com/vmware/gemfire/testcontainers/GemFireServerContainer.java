@@ -27,7 +27,7 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
     withCreateContainerCmdModifier(it -> it.withName(config.getServerName()));
 
     // This is just so that TC can use the mapped port for the initial wait strategy.
-    withExposedPorts(config.getProxyForwardPort());
+    withExposedPorts(config.getProxyPublicPort());
 
     jvmArgs.add(String.format("--J=-Dgemfire.locators=%s[%d]",
         config.getLocatorHost(), config.getLocatorPort()));
@@ -39,7 +39,7 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
     command.add("start");
     command.add("server");
     command.add("--name=" + config.getServerName());
-    command.add("--server-port=" + config.getProxyForwardPort());
+    command.add("--server-port=" + config.getProxyPublicPort());
     command.addAll(jvmArgs);
 
     String classpathPart = getBinds()
@@ -54,6 +54,6 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
     withCommand(command.toArray(new String[]{}));
 
     logger().info("Starting GemFire server: {}:{}", config.getServerName(),
-        config.getProxyForwardPort());
+        config.getProxyPublicPort());
   }
 }

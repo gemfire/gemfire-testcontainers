@@ -13,7 +13,7 @@ class MemberConfig {
   private final String serverName;
   private final List<Consumer<AbstractGemFireContainer<?>>> configConsumers = new ArrayList<>();
   private int proxyListenPort;
-  private int proxyForwardPort;
+  private int proxyPublicPort;
   private String locatorHost;
   private int locatorPort;
 
@@ -33,6 +33,10 @@ class MemberConfig {
     configConsumers.forEach(config -> config.accept(container));
   }
 
+  /**
+   * Set the port that the proxy listens on. This is NOT the port that will be mapped externally as
+   * the 'public' port.
+   */
   void setProxyListenPort(int port) {
     proxyListenPort = port;
   }
@@ -41,12 +45,12 @@ class MemberConfig {
     return proxyListenPort;
   }
 
-  void setProxyForwardPort(int port) {
-    proxyForwardPort = port;
+  void setProxyPublicPort(int port) {
+    proxyPublicPort = port;
   }
 
-  public int getProxyForwardPort() {
-    return proxyForwardPort;
+  public int getProxyPublicPort() {
+    return proxyPublicPort;
   }
 
   public void setLocatorHostPort(String locatorHost, int locatorPort) {

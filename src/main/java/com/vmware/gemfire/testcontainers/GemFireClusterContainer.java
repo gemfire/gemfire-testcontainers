@@ -59,9 +59,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   public static final String DEFAULT_IMAGE = "gemfire/gemfire:9.15.6";
 
-  private static final String LOCATOR_NAME_PREFIX = "locator-1";
-
-  private static final int LOCATOR_PORT = 10334;
+  private static final String LOCATOR_NAME_PREFIX = "locator-0";
 
   private static final int HTTP_PORT = 7070;
 
@@ -69,7 +67,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   private static final List<String> DEFAULT_LOCATOR_ARGS = Arrays.asList(
       "--J=-Dgemfire.use-cluster-configuration=true",
-      "--J=-Dgemfire.http-service-port=7070",
+      "--J=-Dgemfire.http-service-port=" + HTTP_PORT,
       "--J=-Dgemfire.jmx-manager-start=true",
       "--hostname-for-clients=localhost"
   );
@@ -83,6 +81,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   private GemFireProxyContainer proxy;
   private final List<GemFireServerContainer<?>> servers = new ArrayList<>();
   private final String locatorName;
+  private final int serverCount;
   private int locatorPort = 0;
   private Runnable postDeployGfsh = () -> {};
   private Runnable configurePdxGfsh = () -> {};
@@ -106,23 +105,30 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   public GemFireClusterContainer(int serverCount, DockerImageName image) {
     super(image);
+    this.serverCount = serverCount;
     this.image = image;
-    this.suffix = Base58.randomString(6);
+    suffix = Base58.randomString(6);
 
     locatorName = LOCATOR_NAME_PREFIX + "-" + suffix;
     jvmArgs = new ArrayList<>(DEFAULT_LOCATOR_ARGS);
 
-    memberConfigs = new ArrayList<>(serverCount);
+    memberConfigs = new ArrayList<>();
+    memberConfigs.add(new MemberConfig(locatorName));
+
     for (int i = 0; i < serverCount; i++) {
       String name = String.format("server-%d-%s", i, suffix);
       MemberConfig config = new MemberConfig(name);
-      config.setLocatorHostPort(locatorName, locatorPort);
       memberConfigs.add(config);
     }
 
     network =
         Network.builder().createNetworkCmdModifier(it -> it.withName("gemfire-" + suffix)).build();
     withNetwork(network);
+
+    proxy = new GemFireProxyContainer(memberConfigs);
+    proxy.withNetwork(network);
+    // Once the proxy has started, all the public ports, for each MemberConfig, will be set.
+    proxy.start();
   }
 
   @Override
@@ -131,16 +137,11 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
     withCreateContainerCmdModifier(it -> it.withName(locatorName));
 
-    // The default Wait strategy waits for all the exposed (mapped) ports to start listening
-    withExposedPorts(JMX_PORT, HTTP_PORT);
-
     // If we didn't request an explicit locator port then just expose an ephemeral port
     if (locatorPort == 0) {
-      addExposedPort(LOCATOR_PORT);
-      locatorPort = LOCATOR_PORT;
-    } else {
-      setPortBindings(Collections.singletonList(String.format("%d:%d", locatorPort, locatorPort)));
+      locatorPort = memberConfigs.get(0).getProxyPublicPort();
     }
+    setPortBindings(Collections.singletonList(String.format("%d:%d", locatorPort, locatorPort)));
 
     // Once the locator port is established, update the MemberConfigs
     memberConfigs.forEach(m -> m.setLocatorHostPort(locatorName, locatorPort));
@@ -169,12 +170,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
   protected void containerIsStarted(InspectContainerResponse containerInfo) {
     configurePdxGfsh.run();
 
-    proxy = new GemFireProxyContainer(memberConfigs);
-    proxy.withNetwork(network);
-    // Once the proxy has started, all the forwarding ports, for each MemberConfig, will be set.
-    proxy.start();
-
-    for (MemberConfig config : memberConfigs) {
+    // Exclude the first (locator) entry
+    for (MemberConfig config : memberConfigs.subList(1, memberConfigs.size())) {
       GemFireServerContainer<?> server = new GemFireServerContainer<>(config, image);
       server.withNetwork(network);
 
@@ -418,6 +415,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * Return the port that can be used to connect {@code gfsh} over HTTP.
    *
    * @return the http port for gfsh connections
+  public int getHttpPort() {
    */
   public int getHttpPort() {
     return getMappedPort(HTTP_PORT);

@@ -23,9 +23,9 @@ public class GemFireTestcontainersRuleTest {
 
   @Test
   public void testSetupWithRule() {
-    try (
-        ClientCache cache = new ClientCacheFactory().addPoolLocator("localhost",
-            cluster.getLocatorPort()).create()
+    try (ClientCache cache = new ClientCacheFactory()
+        .addPoolLocator("localhost", cluster.getLocatorPort())
+        .create()
     ) {
       Region<Integer, String> region = cache
           .<Integer, String>createClientRegionFactory(ClientRegionShortcut.PROXY)
