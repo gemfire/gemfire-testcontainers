@@ -15,7 +15,7 @@ repositories {
 
   maven {
     name = 'PivotalRepository'
-    url = uri('https://commercial-repo.pivotal.io/data3/gemfire-release-repo/gemfire')
+    url = "https://vmwaresaas.jfrog.io/artifactory/gemfire-release-repo"
     credentials {
       username = System.getenv("COMMERCIAL_MAVEN_USERNAME")
       password = System.getenv("COMMERCIAL_MAVEN_PASSWORD")
