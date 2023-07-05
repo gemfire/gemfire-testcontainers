@@ -140,8 +140,9 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     // If we didn't request an explicit locator port then just expose an ephemeral port
     if (locatorPort == 0) {
       locatorPort = memberConfigs.get(0).getProxyPublicPort();
+    } else {
+      setPortBindings(Collections.singletonList(String.format("%d:%d", locatorPort, locatorPort)));
     }
-    setPortBindings(Collections.singletonList(String.format("%d:%d", locatorPort, locatorPort)));
 
     // Once the locator port is established, update the MemberConfigs
     memberConfigs.forEach(m -> m.setLocatorHostPort(locatorName, locatorPort));
@@ -408,7 +409,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * @return the locator port
    */
   public int getLocatorPort() {
-    return getMappedPort(locatorPort);
+    return locatorPort;
   }
 
   /**
