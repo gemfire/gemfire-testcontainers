@@ -15,7 +15,7 @@ repositories {
 
   maven {
     name = 'VMware Repository'
-    url = "https://commercial-repo.pivotal.io/data3/gemfire-release-repo/gemfire"
+    url = project.findProperty("commercialRepository") ?: "https://commercial-repo.pivotal.io/data3/gemfire-release-repo/gemfire"
     credentials {
       username = System.getenv("COMMERCIAL_MAVEN_USERNAME")
       password = System.getenv("COMMERCIAL_MAVEN_PASSWORD")
