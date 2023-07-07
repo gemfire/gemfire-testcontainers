@@ -2,7 +2,6 @@ plugins {
   id 'java'
   id 'maven-publish'
   id 'java-library'
-  id 'signing'
 }
 
 targetCompatibility = '1.8'
@@ -58,7 +57,7 @@ publishing {
   repositories {
     maven {
       name = "VMware"
-      url = project.findProperty("commercialRepository")
+      url = project.findProperty("publishRepository")
       credentials {
         username = System.getenv("PUBLISH_MAVEN_USERNAME")
         password = System.getenv("PUBLISH_MAVEN_PASSWORD")
@@ -86,11 +85,4 @@ java {
 
 test {
   useJUnit()
-}
-
-signing {
-  def signingKey = findProperty("signingKey")
-  def signingPassword = findProperty("signingPassword")
-  useInMemoryPgpKeys(signingKey, signingPassword)
-  sign publishing.publications.maven
 }
