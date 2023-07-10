@@ -67,7 +67,7 @@ publishing {
 }
 
 dependencies {
-  implementation 'org.testcontainers:testcontainers:1.17.6'
+  api 'org.testcontainers:testcontainers:1.18.3'
 
   testImplementation 'org.assertj:assertj-core:3.24.2'
   testImplementation 'ch.qos.logback:logback-classic:1.3.5'
