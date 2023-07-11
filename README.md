@@ -3,6 +3,25 @@
 Testcontainers can be used to automatically instantiate and manage [VMware GemFire](https://docs.vmware.com/en/VMware-GemFire/index.html)
 clusters. This is enabled using the official [Docker images](https://hub.docker.com/r/gemfire/gemfire) for GemFire.
 
+## Dependencies
+
+Official artifacts are published to VMware's commercial repository. Please follow the instructions
+[here](https://gemfire.dev/quickstart/java/) in order to set up your repository definitions.
+
+Dependencies for Maven can then be added with:
+```xml
+<dependency>
+  <groupId>com.vmware.gemfire</groupId>
+  <artifactId>gemfire-testcontainers</artifactId>
+  <version>1.0</version>
+</dependency>
+```
+
+Or, for gradle:
+```java
+testImplementation 'com.vmware.gemfire:gemfire-testcontainers:1.0'
+```
+
 ## Example
 
 Create a GemFire cluster and use it in your tests:
@@ -125,7 +144,7 @@ JVM debugging can be enabled on an individual server:
 This will expose port `5005` for debugging on server `1`. *Note that the server will wait for a
 debugger to attach before continuing with start up.*
 
-## Building:
+## Building
 
 In order to build and test this code, you will need to register an account on the commercial
 GemFire repo: https://commercial-repo.pivotal.io/data3/gemfire-release-repo/gemfire. This will give
