@@ -7,7 +7,11 @@ package com.vmware.gemfire.testcontainers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.function.Consumer;
+
+import org.junit.Before;
 import org.junit.Test;
+import org.testcontainers.containers.output.OutputFrame;
 
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.client.ClientCache;
@@ -16,10 +20,18 @@ import org.apache.geode.cache.client.ClientRegionShortcut;
 
 public class GemFireTestcontainersTest {
 
+  private Consumer<OutputFrame> logConsumer;
+
+  @Before
+  public void setup() {
+    logConsumer = x -> System.out.println(x.getUtf8StringWithoutLineEnding());
+  }
+
   @Test
   public void testBasicSetup() {
     try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
       cluster.acceptLicense();
+      cluster.withLogConsumer(logConsumer);
       cluster.start();
     }
   }
@@ -34,6 +46,7 @@ public class GemFireTestcontainersTest {
   public void testSetupWithGfsh() {
     try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
       cluster.acceptLicense();
+      cluster.withLogConsumer(logConsumer);
       cluster.start();
 
       cluster.gfsh(
@@ -64,6 +77,7 @@ public class GemFireTestcontainersTest {
     try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
       cluster.withCacheXml("/test-cache.xml");
       cluster.acceptLicense();
+      cluster.withLogConsumer(logConsumer);
       cluster.start();
 
       try (
@@ -90,6 +104,7 @@ public class GemFireTestcontainersTest {
           .withGemFireProperty("security-username", "cluster")
           .withGemFireProperty("security-password", "cluster")
           .acceptLicense()
+          .withLogConsumer(logConsumer)
           .start();
 
       cluster.gfsh(true, "create region --name=FOO --type=REPLICATE");
@@ -120,6 +135,7 @@ public class GemFireTestcontainersTest {
     try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
       cluster.withLocatorPort(locatorPort);
       cluster.acceptLicense();
+      cluster.withLogConsumer(logConsumer);
       cluster.start();
 
       assertThat(cluster.getLocatorPort()).isEqualTo(locatorPort);
