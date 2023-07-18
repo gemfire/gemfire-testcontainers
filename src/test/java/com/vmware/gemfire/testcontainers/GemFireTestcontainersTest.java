@@ -5,6 +5,7 @@
 package com.vmware.gemfire.testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.Test;
 
@@ -21,6 +22,12 @@ public class GemFireTestcontainersTest {
       cluster.acceptLicense();
       cluster.start();
     }
+  }
+
+  @Test
+  public void failWhenLicenseIsNotAccepted() {
+    assertThatThrownBy(() -> new GemFireClusterContainer().start())
+        .hasRootCauseMessage("Container did not start correctly.");
   }
 
   @Test
