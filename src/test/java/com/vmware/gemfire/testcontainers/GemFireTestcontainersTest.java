@@ -20,11 +20,16 @@ import org.apache.geode.cache.client.ClientRegionShortcut;
 
 public class GemFireTestcontainersTest {
 
+  private static boolean debugTests = Boolean.getBoolean("gemfire-testcontainers.debug-tests");
   private Consumer<OutputFrame> logConsumer;
 
   @Before
   public void setup() {
-    logConsumer = x -> System.out.println(x.getUtf8StringWithoutLineEnding());
+    if (debugTests) {
+      logConsumer = x -> System.out.println(x.getUtf8StringWithoutLineEnding());
+    } else {
+      logConsumer = x -> {};
+    }
   }
 
   @Test
