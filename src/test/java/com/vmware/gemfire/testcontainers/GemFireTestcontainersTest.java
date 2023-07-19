@@ -112,7 +112,8 @@ public class GemFireTestcontainersTest {
           .withLogConsumer(logConsumer)
           .start();
 
-      cluster.gfsh(true, "create region --name=FOO --type=REPLICATE");
+      cluster.gfsh(true, "list members",
+          "create region --name=FOO --type=REPLICATE");
 
       try (
           ClientCache cache = new ClientCacheFactory()
