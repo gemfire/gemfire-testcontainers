@@ -165,6 +165,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     }
 
     withCommand(command.toArray(new String[]{}));
+
+    logger().info("Starting GemFire locator: {}:{}", locatorName, locatorPort);
   }
 
   @Override
