@@ -184,6 +184,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
       servers.add(server);
     }
 
+    dependsOn(servers);
+
     postDeployGfsh.run();
   }
 

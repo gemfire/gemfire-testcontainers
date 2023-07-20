@@ -28,7 +28,6 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
     withCreateContainerCmdModifier(it -> it.withName(config.getServerName()));
 
     // This is just so that TC can use the mapped port for the initial wait strategy.
-    logger().info("  DEBUG using exposed port: {}", config.getProxyPublicPort());
     withExposedPorts(config.getProxyPublicPort());
 
     withStartupTimeout(Duration.ofSeconds(DEFAULT_STARTUP_TIMEOUT));
