@@ -147,7 +147,7 @@ public class GemFireTestcontainersTest {
 
       assertThat(cluster.getLocatorPort()).isEqualTo(locatorPort);
 
-      cluster.gfsh(false, "create region --name=FOO --type=REPLICATE");
+      cluster.gfsh(true, "list members", "create region --name=FOO --type=REPLICATE");
 
       try (
           ClientCache cache = new ClientCacheFactory()
