@@ -20,7 +20,8 @@ import org.apache.geode.cache.client.ClientRegionShortcut;
 
 public class GemFireTestcontainersTest {
 
-  private static boolean debugTests = Boolean.getBoolean("gemfire-testcontainers.debug-tests");
+  private static boolean debugTests =
+      Boolean.getBoolean("gemfire-testcontainers.log-test-container-output");
   private Consumer<OutputFrame> logConsumer;
 
   @Before
