@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -136,6 +137,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     super.configure();
 
     withCreateContainerCmdModifier(it -> it.withName(locatorName));
+    withStartupTimeout(Duration.ofSeconds(DEFAULT_STARTUP_TIMEOUT));
 
     // If we didn't request an explicit locator port then just expose an ephemeral port
     if (locatorPort == 0) {
