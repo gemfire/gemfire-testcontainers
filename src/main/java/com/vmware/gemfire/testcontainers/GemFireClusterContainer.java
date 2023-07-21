@@ -75,6 +75,9 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   private static final int DEFAULT_SERVER_COUNT = 2;
 
+  private static boolean logContainerOutputToStdout =
+      Boolean.getBoolean("gemfire-testcontainers.log-container-output");
+
   private final Network network;
   private final DockerImageName image;
   private final String suffix;
@@ -130,6 +133,10 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     proxy.withNetwork(network);
     // Once the proxy has started, all the public ports, for each MemberConfig, will be set.
     proxy.start();
+
+    if (logContainerOutputToStdout) {
+      withLogConsumer(x -> System.out.println(x.getUtf8StringWithoutLineEnding()));
+    }
   }
 
   @Override

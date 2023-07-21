@@ -144,6 +144,8 @@ JVM debugging can be enabled on an individual server:
 This will expose port `5005` for debugging on server `1`. *Note that the server will wait for a
 debugger to attach before continuing with start up.*
 
+In order to log all container output to `stdout`, you can set the Java system property `-Dgemfire-testcontainers.log-container-output=true`.
+
 ## Building
 
 In order to build and test this code, you will need to register an account on the commercial

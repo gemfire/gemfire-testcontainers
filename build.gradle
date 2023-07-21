@@ -85,6 +85,6 @@ java {
 
 test {
   useJUnit()
-  boolean debugTests = project.findProperty("logTestContainerOutput") ?: false
-  jvmArgs "-Dgemfire-testcontainers.log-test-container-output=${debugTests}"
+  boolean debugTests = project.findProperty("logContainerOutput") ?: false
+  jvmArgs "-Dgemfire-testcontainers.log-container-output=${debugTests}"
 }
