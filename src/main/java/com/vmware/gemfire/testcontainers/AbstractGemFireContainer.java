@@ -12,6 +12,8 @@ import org.testcontainers.utility.DockerImageName;
 public class AbstractGemFireContainer<SELF extends AbstractGemFireContainer<SELF>>
     extends GenericContainer<SELF> {
 
+  protected static final int DEFAULT_STARTUP_TIMEOUT = 120;
+
   protected List<String> jvmArgs;
 
   protected AbstractGemFireContainer(DockerImageName image) {

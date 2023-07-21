@@ -4,6 +4,7 @@
 
 package com.vmware.gemfire.testcontainers;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,6 +29,8 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
 
     // This is just so that TC can use the mapped port for the initial wait strategy.
     withExposedPorts(config.getProxyPublicPort());
+
+    withStartupTimeout(Duration.ofSeconds(DEFAULT_STARTUP_TIMEOUT));
 
     jvmArgs.add(String.format("--J=-Dgemfire.locators=%s[%d]",
         config.getLocatorHost(), config.getLocatorPort()));

@@ -19,7 +19,7 @@ public class GemFireTestcontainersRuleTest {
   @Rule
   public GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()
       .acceptLicense()
-      .withGfsh(true, "create region --name=BAZ --type=REPLICATE");
+      .withGfsh(true, "list members", "create region --name=BAZ --type=REPLICATE");
 
   @Test
   public void testSetupWithRule() {

@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,6 +75,9 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   private static final int DEFAULT_SERVER_COUNT = 2;
 
+  private static boolean logContainerOutputToStdout =
+      Boolean.getBoolean("gemfire-testcontainers.log-container-output");
+
   private final Network network;
   private final DockerImageName image;
   private final String suffix;
@@ -129,6 +133,10 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     proxy.withNetwork(network);
     // Once the proxy has started, all the public ports, for each MemberConfig, will be set.
     proxy.start();
+
+    if (logContainerOutputToStdout) {
+      withLogConsumer(x -> System.out.println(x.getUtf8StringWithoutLineEnding()));
+    }
   }
 
   @Override
@@ -136,6 +144,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     super.configure();
 
     withCreateContainerCmdModifier(it -> it.withName(locatorName));
+    withStartupTimeout(Duration.ofSeconds(DEFAULT_STARTUP_TIMEOUT));
 
     // If we didn't request an explicit locator port then just expose an ephemeral port
     if (locatorPort == 0) {
@@ -165,6 +174,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     }
 
     withCommand(command.toArray(new String[]{}));
+
+    logger().info("Starting GemFire locator: {}:{}", locatorName, locatorPort);
   }
 
   @Override
@@ -179,6 +190,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
       server.start();
       servers.add(server);
     }
+
+    dependsOn(servers);
 
     postDeployGfsh.run();
   }

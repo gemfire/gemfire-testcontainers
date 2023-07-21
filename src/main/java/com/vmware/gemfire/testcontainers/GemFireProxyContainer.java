@@ -50,14 +50,13 @@ public class GemFireProxyContainer extends SocatContainer {
       int mappedPort = getMappedPort(internalPort);
       config.setProxyPublicPort(mappedPort);
 
-      socats.add(
-          String.format(
-              "socat TCP-LISTEN:%d,fork,reuseaddr TCP:%s:%d",
-              internalPort,
-              config.getServerName(),
-              mappedPort
-          )
+      String socatCommand = String.format("socat TCP-LISTEN:%d,fork,reuseaddr TCP:%s:%d",
+          internalPort,
+          config.getServerName(),
+          mappedPort
       );
+      socats.add(socatCommand);
+      logger().info("  " + socatCommand);
     }
 
     String command = "#!/bin/sh\n";
