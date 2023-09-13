@@ -3,6 +3,8 @@
 Testcontainers can be used to automatically instantiate and manage [VMware GemFire](https://docs.vmware.com/en/VMware-GemFire/index.html)
 clusters. This is enabled using the official [Docker images](https://hub.docker.com/r/gemfire/gemfire) for GemFire.
 
+Note that the default image is `gemfire/10` which will use the latest, published, `10.x` image.
+
 ## Dependencies
 
 Official artifacts are published to VMware's commercial repository. Please follow the instructions
