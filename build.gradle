@@ -87,4 +87,8 @@ test {
   useJUnit()
   boolean debugTests = project.findProperty("logContainerOutput") ?: false
   jvmArgs "-Dgemfire-testcontainers.log-container-output=${debugTests}"
+
+  if (project.findProperty('gemfire.image') != null) {
+    systemProperty 'gemfire.image', findProperty('gemfire.image')
+  }
 }

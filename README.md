@@ -146,7 +146,8 @@ debugger to attach before continuing with start up.*
 
 In order to log all container output to `stdout`, you can set the Java system property `-Dgemfire-testcontainers.log-container-output=true`.
 
-## Building
+
+## Building and Testing
 
 In order to build and test this code, you will need to register an account on the commercial
 GemFire repo: https://commercial-repo.pivotal.io/data3/gemfire-release-repo/gemfire. This will give
@@ -165,4 +166,12 @@ Now you will be ready to build and test:
 
 ```shell
 ./gradlew build
+```
+
+In order to use a different default image you can set the Java system property `gemfire.image`.
+To use this when running the `gemfire-testcontainers` tests you can set this property as a Gradle
+property. For example:
+
+```shell
+./gradlew test -P gemfire.image=gemfire/10.0.27
 ```

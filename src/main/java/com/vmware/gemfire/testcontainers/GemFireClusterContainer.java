@@ -58,7 +58,8 @@ import org.testcontainers.utility.DockerImageName;
 public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     extends AbstractGemFireContainer<SELF> {
 
-  public static final String DEFAULT_IMAGE = "gemfire/gemfire:10.0";
+  public static final String DEFAULT_IMAGE =
+      System.getProperty("gemfire.image", "gemfire/gemfire:10");
 
   private static final String LOCATOR_NAME_PREFIX = "locator-0";
 
