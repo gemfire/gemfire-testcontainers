@@ -5,9 +5,11 @@
 package com.vmware.gemfire.testcontainers;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +26,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.images.builder.Transferable;
+import org.testcontainers.shaded.org.apache.commons.io.FileUtils;
 import org.testcontainers.utility.Base58;
 import org.testcontainers.utility.DockerImageName;
 
@@ -157,6 +160,8 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
     // Once the locator port is established, update the MemberConfigs
     memberConfigs.forEach(m -> m.setLocatorHostPort(locatorName, locatorPort));
 
+    memberConfigs.get(0).apply(this);
+
     List<String> command = new ArrayList<>();
     command.add("gfsh");
     command.add("start");
@@ -247,9 +252,6 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
    * @return this
    */
   public SELF withClasspath(String... classpaths) {
-    for (int i = 0; i < classpaths.length; i++) {
-      addFileSystemBind(classpaths[i], "/classpath/" + i, BindMode.READ_ONLY);
-    }
     return withServerConfiguration(container -> {
       for (int i = 0; i < classpaths.length; i++) {
         container.addFileSystemBind(classpaths[i], "/classpath/" + i, BindMode.READ_ONLY);
@@ -291,15 +293,15 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
   /**
    * Open a debug port for a given instance. The provided port will be exposed externally and the
-   * server instance will wait until a debugger connects before continuing.
+   * instance will wait until a debugger connects before continuing.
    *
-   * @param serverIndex the instance to target. Instances are numbered from 1.
+   * @param memberIndex the instance to target. The locator is index 0 and servers start at index 1.
    * @param port        the port to use for debugging.
    * @return this
    */
-  public SELF withDebugPort(int serverIndex, int port) {
+  public SELF withDebugPort(int memberIndex, int port) {
     memberConfigs
-        .get(serverIndex)
+        .get(memberIndex)
         .addConfig(container -> {
           container.setPortBindings(Collections.singletonList(String.format("%d:%d", port, port)));
           container.addJvmArg(
@@ -343,6 +345,34 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
       container.withCopyToContainer(Transferable.of(localFile), "/cache.xml");
       container.addJvmArg("--J=-Dgemfire.cache-xml-file=/cache.xml");
     });
+  }
+
+  public SELF withExtension(String extensionPath, ApplyTo applyTo) {
+    File file = Paths.get(extensionPath).toFile();
+    if (!file.isFile()) {
+      throw new RuntimeException("Unable to locate extension: " + extensionPath);
+    }
+
+    byte[] fileBytes;
+    try {
+      fileBytes = FileUtils.readFileToByteArray(file);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+
+    String containerExtensionFile = "/gemfire/extensions/" + file.getName();
+
+    if (applyTo == ApplyTo.LOCATOR || applyTo == ApplyTo.LOCATOR_AND_SERVER) {
+      withCopyToContainer(Transferable.of(fileBytes), containerExtensionFile);
+    }
+
+    if (applyTo == ApplyTo.SERVER || applyTo == ApplyTo.LOCATOR_AND_SERVER) {
+      withServerConfiguration(container -> {
+        container.withCopyToContainer(Transferable.of(fileBytes), containerExtensionFile);
+      });
+    }
+
+    return self();
   }
 
   private byte[] readAllBytes(InputStream input) throws IOException {
