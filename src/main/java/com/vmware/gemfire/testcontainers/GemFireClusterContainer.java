@@ -25,6 +25,7 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.OutputFrame;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.shaded.org.apache.commons.io.FileUtils;
 import org.testcontainers.utility.Base58;
@@ -149,6 +150,7 @@ public class GemFireClusterContainer<SELF extends GemFireClusterContainer<SELF>>
 
     withCreateContainerCmdModifier(it -> it.withName(locatorName));
     withStartupTimeout(Duration.ofSeconds(DEFAULT_STARTUP_TIMEOUT));
+    waitingFor(Wait.forLogMessage(".*Locator started on.*", 1));
 
     // If we didn't request an explicit locator port then just expose an ephemeral port
     if (locatorPort == 0) {

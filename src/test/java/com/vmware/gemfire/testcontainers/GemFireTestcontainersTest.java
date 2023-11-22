@@ -19,6 +19,7 @@ public class GemFireTestcontainersTest {
   @Test
   public void testBasicSetup() {
     try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()) {
+      cluster.withPdx(".*", true);
       cluster.acceptLicense();
       cluster.start();
     }
