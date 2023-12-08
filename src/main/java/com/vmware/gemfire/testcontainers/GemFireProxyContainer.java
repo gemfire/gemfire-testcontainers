@@ -24,12 +24,21 @@ public class GemFireProxyContainer extends SocatContainer {
 
   private final List<MemberConfig> serverConfigs;
 
-  public GemFireProxyContainer(List<MemberConfig> serverConfigs) {
+  private final List<MemberConfig> locatorConfigs;
+
+  public GemFireProxyContainer(List<MemberConfig> locatorConfigs, List<MemberConfig> serverConfigs) {
     super();
+    this.locatorConfigs = locatorConfigs;
     this.serverConfigs = serverConfigs;
 
-    for (int i = 0; i < serverConfigs.size(); i++) {
+    for (int i = 0; i < locatorConfigs.size(); i++) {
       int port = BASE_PORT + i;
+      addExposedPort(port);
+      locatorConfigs.get(i).setProxyListenPort(port);
+    }
+
+    for (int i = 0; i < serverConfigs.size(); i++) {
+      int port = BASE_PORT + locatorConfigs.size() + i;
       addExposedPort(port);
       serverConfigs.get(i).setProxyListenPort(port);
     }
@@ -44,17 +53,14 @@ public class GemFireProxyContainer extends SocatContainer {
   @Override
   protected void containerIsStarting(InspectContainerResponse containerInfo) {
     List<String> socats = new ArrayList<>();
-    for (int i = 0; i < serverConfigs.size(); i++) {
-      MemberConfig config = serverConfigs.get(i);
-      int internalPort = config.getProxyListenPort();
-      int mappedPort = getMappedPort(internalPort);
-      config.setProxyPublicPort(mappedPort);
+    for (MemberConfig serverConfig : locatorConfigs) {
+      String socatCommand = applySocatConfiguration(serverConfig);
+      socats.add(socatCommand);
+      logger().info("  " + socatCommand);
+    }
 
-      String socatCommand = String.format("socat TCP-LISTEN:%d,fork,reuseaddr TCP:%s:%d",
-          internalPort,
-          config.getServerName(),
-          mappedPort
-      );
+    for (MemberConfig serverConfig : serverConfigs) {
+      String socatCommand = applySocatConfiguration(serverConfig);
       socats.add(socatCommand);
       logger().info("  " + socatCommand);
     }
@@ -63,5 +69,17 @@ public class GemFireProxyContainer extends SocatContainer {
     command += String.join(" & ", socats);
 
     copyFileToContainer(Transferable.of(command, 0777), STARTER_SCRIPT);
+  }
+
+  private String applySocatConfiguration(MemberConfig memberConfig) {
+    int internalPort = memberConfig.getProxyListenPort();
+    int mappedPort = getMappedPort(internalPort);
+    memberConfig.setProxyPublicPort(mappedPort);
+
+    return String.format("socat TCP-LISTEN:%d,fork,reuseaddr TCP:%s:%d",
+        internalPort,
+        memberConfig.getHostname(),
+        mappedPort
+    );
   }
 }

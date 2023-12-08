@@ -17,7 +17,7 @@ import org.apache.geode.cache.client.ClientRegionShortcut;
 public class GemFireTestcontainersRuleTest {
 
   @Rule
-  public GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()
+  public GemFireCluster cluster = new GemFireCluster()
       .acceptLicense()
       .withGfsh(true, "list members", "create region --name=BAZ --type=REPLICATE");
 

@@ -7,7 +7,7 @@ plugins {
 targetCompatibility = '1.8'
 
 group 'com.vmware.gemfire'
-version '1.1'
+version '2.0.0'
 
 repositories {
   mavenCentral()

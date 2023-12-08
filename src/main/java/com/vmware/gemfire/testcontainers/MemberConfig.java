@@ -5,32 +5,56 @@
 package com.vmware.gemfire.testcontainers;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-class MemberConfig {
+public class MemberConfig {
 
-  private final String serverName;
+  private final String memberName;
+  private final String hostname;
   private final List<Consumer<AbstractGemFireContainer<?>>> configConsumers = new ArrayList<>();
+  private final List<Consumer<AbstractGemFireContainer<?>>> preStartConsumers = new ArrayList<>();
   private int proxyListenPort;
   private int proxyPublicPort;
-  private String locatorHost;
-  private int locatorPort;
+  private int port;
+  private AbstractGemFireContainer<?> container;
 
-  MemberConfig(String serverName) {
-    this.serverName = serverName;
+  MemberConfig(String prefix, int index, String suffix) {
+    this.memberName = String.format("%s-%d", prefix, index);
+    this.hostname = String.format("%s-%d-%s", prefix, index, suffix);
   }
 
-  public String getServerName() {
-    return serverName;
+  public String getMemberName() {
+    return memberName;
+  }
+
+  public String getHostname() {
+    return hostname;
+  }
+
+  public AbstractGemFireContainer<?> getContainer() {
+    return container;
+  }
+
+  public void setContainer(AbstractGemFireContainer<?> container) {
+    this.container = container;
   }
 
   void addConfig(Consumer<AbstractGemFireContainer<?>> config) {
     configConsumers.add(config);
   }
 
+  void addPreStart(Consumer<AbstractGemFireContainer<?>> config) {
+    preStartConsumers.add(config);
+  }
+
   void apply(AbstractGemFireContainer<?> container) {
-    configConsumers.forEach(config -> config.accept(container));
+    configConsumers.forEach(consumer -> consumer.accept(container));
+  }
+
+  void applyPreStart(AbstractGemFireContainer<?> container) {
+    preStartConsumers.forEach(consumer -> consumer.accept(container));
   }
 
   /**
@@ -41,8 +65,18 @@ class MemberConfig {
     proxyListenPort = port;
   }
 
-  public int getProxyListenPort() {
+  int getProxyListenPort() {
     return proxyListenPort;
+  }
+
+  public int getPort() {
+    return port == 0 ? proxyPublicPort : port;
+  }
+
+  public void setPort(int port) {
+    this.port = port;
+    addConfig(container -> container
+        .setPortBindings(Collections.singletonList(String.format("%d:%d", port, port))));
   }
 
   void setProxyPublicPort(int port) {
@@ -53,16 +87,4 @@ class MemberConfig {
     return proxyPublicPort;
   }
 
-  public void setLocatorHostPort(String locatorHost, int locatorPort) {
-    this.locatorHost = locatorHost;
-    this.locatorPort = locatorPort;
-  }
-
-  public String getLocatorHost() {
-    return locatorHost;
-  }
-
-  public int getLocatorPort() {
-    return locatorPort;
-  }
 }
