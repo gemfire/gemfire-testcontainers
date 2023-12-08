@@ -173,11 +173,11 @@ public class GemFireTestcontainersTest {
       cluster.acceptLicense();
       cluster.start();
 
-//      String result = cluster.gfsh(
-//          true,
-//          "configure pdx"
-//      );
-//      assertThat(result).contains();
+      String result = cluster.gfsh(
+          true,
+          "export cluster-configuration"
+      );
+      assertThat(result).contains("<pdx read-serialized=\"true\"", "ReflectionBasedAutoSerializer");
     }
   }
 
@@ -218,7 +218,7 @@ public class GemFireTestcontainersTest {
     final int locatorPort = 54321;
 
     try (GemFireCluster cluster = new GemFireCluster()) {
-      cluster.withLocatorPorts(locatorPort);
+      cluster.withPorts(LOCATOR_GLOB, locatorPort);
       cluster.acceptLicense();
       cluster.start();
 
@@ -248,11 +248,38 @@ public class GemFireTestcontainersTest {
     final int port2 = 54322;
 
     try (GemFireCluster cluster = new GemFireCluster()) {
-      cluster.withServerPorts(port1, port2);
+      cluster.withPorts(SERVER_GLOB, port1, port2);
       cluster.acceptLicense();
       cluster.start();
 
       assertThat(cluster.getServerPorts()).containsExactly(port1, port2);
+
+      cluster.gfsh(true, "list members", "create region --name=FOO --type=REPLICATE");
+
+      try (
+          ClientCache cache = new ClientCacheFactory()
+              .addPoolServer("localhost", cluster.getServerPorts().get(0))
+              .addPoolServer("localhost", cluster.getServerPorts().get(1))
+              .create()
+      ) {
+        Region<Integer, String> region = cache
+            .<Integer, String>createClientRegionFactory(ClientRegionShortcut.PROXY)
+            .create("FOO");
+
+        region.put(1, "Hello World");
+
+        assertThat(region.get(1)).isEqualTo("Hello World");
+      }
+    }
+  }
+
+  @Test
+  public void testWithEphemeralServerPorts() {
+    try (GemFireCluster cluster = new GemFireCluster()) {
+      cluster.acceptLicense();
+      cluster.start();
+
+      assertThat(cluster.getServerPorts()).hasSize(2);
 
       cluster.gfsh(true, "list members", "create region --name=FOO --type=REPLICATE");
 

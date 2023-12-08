@@ -18,6 +18,8 @@ public class MemberConfig {
   private int proxyListenPort;
   private int proxyPublicPort;
   private int port;
+  private int proxyHttpListenPort;
+  private int proxyHttpPublicPort;
   private AbstractGemFireContainer<?> container;
 
   MemberConfig(String prefix, int index, String suffix) {
@@ -69,6 +71,14 @@ public class MemberConfig {
     return proxyListenPort;
   }
 
+  void setProxyHttpListenPort(int port) {
+    proxyHttpListenPort = port;
+  }
+
+  int getProxyHttpListenPort() {
+    return proxyHttpListenPort;
+  }
+
   public int getPort() {
     return port == 0 ? proxyPublicPort : port;
   }
@@ -85,6 +95,14 @@ public class MemberConfig {
 
   public int getProxyPublicPort() {
     return proxyPublicPort;
+  }
+
+  void setProxyHttpPublicPort(int port) {
+    proxyHttpPublicPort = port;
+  }
+
+  public int getProxyHttpPublicPort() {
+    return proxyHttpPublicPort;
   }
 
 }

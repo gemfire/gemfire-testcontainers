@@ -21,7 +21,6 @@ public class GemFireLocatorContainer<SELF extends GemFireLocatorContainer<SELF>>
   private static final List<String> DEFAULT_LOCATOR_JVM_ARGS =
       Collections.unmodifiableList(Arrays.asList(
           "--J=-Dgemfire.use-cluster-configuration=true",
-          "--J=-Dgemfire.http-service-port=" + HTTP_PORT,
           "--J=-Dgemfire.jmx-manager-start=true",
           "--hostname-for-clients=localhost"
       ));
@@ -59,6 +58,7 @@ public class GemFireLocatorContainer<SELF extends GemFireLocatorContainer<SELF>>
     command.add("--name=" + config.getMemberName());
     command.add("--port=" + config.getPort());
     command.add("--locators=" + locatorAddresses);
+    command.add("--J=-Dgemfire.http-service-port=" + config.getProxyHttpPublicPort());
     command.addAll(jvmArgs);
 
     String classpathPart = getBinds()

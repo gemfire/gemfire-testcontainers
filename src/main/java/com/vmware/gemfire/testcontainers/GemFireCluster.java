@@ -82,6 +82,7 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
 
   private GemFireProxyContainer proxy;
   private final List<Integer> locatorPorts = new ArrayList<>();
+  private final List<Integer> locatorHttpPorts = new ArrayList<>();
   private final List<Integer> serverPorts = new ArrayList<>();
   private final List<MemberConfig> locatorConfigs = new ArrayList<>();
   private final List<MemberConfig> serverConfigs = new ArrayList<>();
@@ -125,8 +126,10 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
    * Start the cluster. The following steps are performed:
    * <ul>
    *   <li>Launch the proxy container</li>
+   *   <li>Create locator containers and apply preStart configuration</li>
    *   <li>Start locators and wait for complete startup</li>
    *   <li>Execute any PDX configuration command</li>
+   *   <li>Create server containers and apply preStart configuration</li>
    *   <li>Start servers and wait for complete startup</li>
    *   <li>Execute any post-deploy gfsh commands (defined using <code>withGfsh()</code>)</li>
    * </ul>
@@ -150,6 +153,7 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
       config.setContainer(locator);
       locator.start();
       locatorPorts.add(config.getPort());
+      locatorHttpPorts.add(config.getProxyHttpPublicPort());
     }
 
     locatorConfigs.forEach(x -> x.getContainer().waitToStart());
@@ -422,25 +426,27 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
   }
 
   /**
-   * Configure an explicit port to expose for the locator.
+   * Configure explicit port to expose for locators and servers.
    * <p>
    * Under most circumstances, the locator's  port can be ephemeral and a test can simply use
    * {@link #getLocatorPort()} to retrieve it. At other times it may be necessary to explicitly
-   * provide the port for the locator to use which is when this API should be used.
+   * provide the port for the locator to use which is when this API should be used. Similarly for
+   * server ports.
    *
-   * @param locatorPorts the port to expose for the locator
+   * @param memberGlob a member name glob to select which members should receive the configuration
+   * @param ports      the ports to expose. The number of ports must match the number of locators
+   *                   or servers that match the glob.
    * @return this
    */
-  public GemFireCluster withLocatorPorts(int... locatorPorts) {
-    for (int i = 0; i < locatorPorts.length; i++) {
-      locatorConfigs.get(i).setPort(locatorPorts[i]);
+  public GemFireCluster withPorts(String memberGlob, int... ports) {
+    List<MemberConfig> members = findMembers(memberGlob);
+    if (members.size() != ports.length) {
+      throw new IllegalArgumentException(String.format(
+          "Found %d members but supplied %d ports. They must be the same.",
+          members.size(), ports.length));
     }
-    return this;
-  }
-
-  public GemFireCluster withServerPorts(int... serverPorts) {
-    for (int i = 0; i < serverPorts.length; i++) {
-      serverConfigs.get(i).setPort(serverPorts[i]);
+    for (int i = 0; i < ports.length; i++) {
+      members.get(i).setPort(ports[i]);
     }
     return this;
   }
@@ -466,7 +472,8 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
 
   /**
    * Return the port at which the locator is listening. This would be used to configure a
-   * GemFire client to connect.
+   * GemFire client to connect. If multiple locators are defined then the first locator's port
+   * is returned.
    *
    * @return the locator port
    */
@@ -474,23 +481,33 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
     return locatorPorts.get(0);
   }
 
+  /**
+   * Return a list of all locator ports.
+   *
+   * @return all locator ports
+   */
   public List<Integer> getLocatorPorts() {
     return locatorPorts;
   }
 
+  /**
+   * Return a list of all server ports.
+   *
+   * @return all server ports
+   */
   public List<Integer> getServerPorts() {
     return serverPorts;
   }
 
   /**
-   * Return the port that can be used to connect {@code gfsh} over HTTP.
+   * Return the ports that can be used to connect {@code gfsh} over HTTP. One port for each
+   * configured locator is returned.
    *
-   * @return the http port for gfsh connections
-  public int getHttpPort() {
+   * @return the http ports for gfsh connections
    */
-//  public int getHttpPort() {
-//    return getMappedPort(HTTP_PORT);
-//  }
+  public List<Integer> getHttpPorts() {
+    return locatorHttpPorts;
+  }
 
   /**
    * Execute the provided commands as a {@code gfsh} script.
