@@ -17,6 +17,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import org.junit.Test;
+import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.Network;
 import org.testcontainers.images.builder.Transferable;
 
 import org.apache.geode.cache.Region;
@@ -140,8 +142,7 @@ public class GemFireTestcontainersTest {
   @Test
   public void testStartWithCacheXmlExplicitlyCopiedToServers() throws Exception {
     String CACHE_XML = "/test-cache.xml";
-    byte[] rawBytes;
-    rawBytes = readAllBytes(Objects.requireNonNull(getClass().getResourceAsStream(CACHE_XML)));
+    byte[] rawBytes = readAllBytes(Objects.requireNonNull(getClass().getResourceAsStream(CACHE_XML)));
     Transferable fileData = Transferable.of(new String(rawBytes));
 
     try (GemFireCluster cluster = new GemFireCluster()) {

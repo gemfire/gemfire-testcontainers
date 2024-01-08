@@ -21,7 +21,7 @@ Dependencies for Maven can then be added with:
 
 Or, for gradle:
 ```java
-testImplementation 'com.vmware.gemfire:gemfire-testcontainers:1.0'
+testImplementation 'com.vmware.gemfire:gemfire-testcontainers:2.0.0'
 ```
 
 ## Example
@@ -29,15 +29,17 @@ testImplementation 'com.vmware.gemfire:gemfire-testcontainers:1.0'
 Create a GemFire cluster and use it in your tests:
 
 ```java
-    try (GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>(IMAGE)) {
+    try (GemFireCluster cluster = new GemFireCluster()) {
         cluster.acceptLicense();
         cluster.start();
     }
 ```
 
 By default, a single locator and 2 servers are created. Additional servers can be created using the
-parameterized `GemFireClusterContainer` constructor. Some API calls require targeting a specific
-server; servers are numbered starting at `0`.
+parameterized `GemFireCluster` constructor. Some API calls require targeting a specific
+server; servers are named `server-N` with numbering starting at `0`. Similarly, locators are named
+`locator-N`. These names are also set as network aliases in addition to the actual docker container
+names.
 
 !!! warning "EULA Acceptance"
 Due to licensing restrictions you are required to accept an EULA for this container image.
@@ -88,7 +90,7 @@ Junit `@Rule` annotation. For example:
 
 ```java
     @Rule
-    public void GemFireClusterContainer<?> cluster = new GemFireClusterContainer<>()
+    public void GemFireCluster cluster = new GemFireCluster()
         .acceptLicense()
         .withGfsh("create region --name=ORDERS --type=PARTITION_REDUNDANT");
 ```
@@ -97,11 +99,17 @@ lifecycle of the GemFire cluster.
 
 ## Additional configuration
 
-Servers can be configured with specific GemFire parameters:
+Locators and servers can be configured with specific GemFire parameters:
 
 ```java
-    cluster.withGemFireProperty("security-manager", SimpleSecurityManager.class.getName());
+    cluster.withGemFireProperty(LOCATOR_GLOB, "security-manager", SimpleSecurityManager.class.getName());
 ```
+
+### Applying configuration to specific members
+
+Most of the configuration methods will take a simple glob pattern to target specific members. For
+example `server-*` would apply the configuration all servers. Several general patterns are defined
+in `GemFireCluster`, namely: `ALL_GLOB`, `LOCATOR_GLOB` and `SERVER_GLOB`.
 
 ### Using a cache.xml file
 
@@ -110,7 +118,7 @@ as a resource and, as such, should be present on the classpath. The file is appl
 all servers on startup.
 
 ```java
-    cluster.withCacheXml("/test-cache.xml");
+    cluster.withCacheXml(SERVER_GLOB, "/test-cache.xml");
 ```
 
 ### Classpath additions
@@ -118,7 +126,7 @@ all servers on startup.
 One or more local directories may be exposed on the classpath of each member of the cluster:
 
 ```java
-    cluster.withClasspath("build/classes/java/main", "out/production/classes");
+    cluster.withClasspath(ALL_GLOB, "build/classes/java/main", "out/production/classes");
 ```
 
 This will allow the local directory to be mounted (read-only) within each container and added to
@@ -135,15 +143,34 @@ and selecting the 'read serialized' option as necessary:
 
 More details about PDX can be found [here](https://docs.vmware.com/en/VMware-GemFire/10.0/gf/developing-data_serialization-gemfire_pdx_serialization.html)
 
+### Copying files before startup
+
+In some cases it may be necessary to copy files to members before GemFire starts up. For example
+to supply certificate files when using TLS. This can be done using the `withPreStart` method:
+
+```java
+    String CACHE_XML = "/test-cache.xml";
+    byte[] rawBytes = readAllBytes(Objects.requireNonNull(getClass().getResourceAsStream(CACHE_XML)));
+    Transferable fileData = Transferable.of(new String(rawBytes));
+
+    try (GemFireCluster cluster = new GemFireCluster()) {
+      cluster.withPreStart(SERVER_GLOB, x -> x.copyFileToContainer(fileData, CACHE_XML));
+      cluster.withGemFireProperty(SERVER_GLOB, "cache-xml-file", CACHE_XML);
+      cluster.acceptLicense();
+      cluster.start();
+      ...
+    }
+```
+
 ### Debugging
 
 JVM debugging can be enabled on an individual server:
 
 ```java
-    cluster.withDebugPort(1, 5005);
+    cluster.withDebugPort("server-0", 5005);
 ```
 
-This will expose port `5005` for debugging on server `1`. *Note that the server will wait for a
+This will expose port `5005` for debugging on server `0`. *Note that the server will wait for a
 debugger to attach before continuing with start up.*
 
 In order to log all container output to `stdout`, you can set the Java system property `-Dgemfire-testcontainers.log-container-output=true`.

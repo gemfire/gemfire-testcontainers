@@ -21,8 +21,7 @@ public class GemFireLocatorContainer<SELF extends GemFireLocatorContainer<SELF>>
   private static final List<String> DEFAULT_LOCATOR_JVM_ARGS =
       Collections.unmodifiableList(Arrays.asList(
           "--J=-Dgemfire.use-cluster-configuration=true",
-          "--J=-Dgemfire.jmx-manager-start=true",
-          "--hostname-for-clients=localhost"
+          "--J=-Dgemfire.jmx-manager-start=true"
       ));
 
   public GemFireLocatorContainer(MemberConfig config, DockerImageName image, Network network,
@@ -31,7 +30,7 @@ public class GemFireLocatorContainer<SELF extends GemFireLocatorContainer<SELF>>
   }
 
   @Override
-  protected String getMemberName() {
+  public String getMemberName() {
     return config.getMemberName();
   }
 
@@ -47,7 +46,8 @@ public class GemFireLocatorContainer<SELF extends GemFireLocatorContainer<SELF>>
 
   @Override
   protected void configure() {
-    withCreateContainerCmdModifier(it -> it.withName(config.getHostname()));
+    withCreateContainerCmdModifier(it -> it.withName(config.getHostname())
+        .withAliases(config.getMemberName()));
 
     config.apply(this);
 
@@ -59,6 +59,7 @@ public class GemFireLocatorContainer<SELF extends GemFireLocatorContainer<SELF>>
     command.add("--port=" + config.getPort());
     command.add("--locators=" + locatorAddresses);
     command.add("--J=-Dgemfire.http-service-port=" + config.getProxyHttpPublicPort());
+    command.add("--hostname-for-clients=" + hostnameForClients);
     command.addAll(jvmArgs);
 
     String classpathPart = getBinds()

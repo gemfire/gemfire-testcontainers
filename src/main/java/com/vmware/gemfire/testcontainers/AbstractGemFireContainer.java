@@ -20,7 +20,8 @@ public abstract class AbstractGemFireContainer<SELF extends AbstractGemFireConta
   protected static boolean logContainerOutputToStdout =
       Boolean.getBoolean("gemfire-testcontainers.log-container-output");
 
-  protected static final int DEFAULT_STARTUP_TIMEOUT = 120;
+  private static final int DEFAULT_STARTUP_TIMEOUT = 120;
+  private int startupTimeout = DEFAULT_STARTUP_TIMEOUT;
 
   protected List<String> jvmArgs;
 
@@ -28,6 +29,7 @@ public abstract class AbstractGemFireContainer<SELF extends AbstractGemFireConta
 
   protected final MemberConfig config;
   protected final String locatorAddresses;
+  protected String hostnameForClients = "localhost";
 
   public AbstractGemFireContainer(MemberConfig config, DockerImageName image, Network network,
       String locatorAddresses) {
@@ -46,18 +48,18 @@ public abstract class AbstractGemFireContainer<SELF extends AbstractGemFireConta
 
   protected abstract String startupMessage();
 
-  protected abstract String getMemberName();
+  public abstract String getMemberName();
 
   protected abstract List<String> getDefaultJvmArgs();
 
-  public void waitToStart() {
-    waitToStart(DEFAULT_STARTUP_TIMEOUT);
+  protected void setStartupTimeout(int timeout) {
+    startupTimeout = timeout;
   }
 
-  public void waitToStart(int secondsToWait) {
+  protected void waitToStart() {
     boolean started = true;
     try {
-      started = startupLatch.await(secondsToWait, TimeUnit.SECONDS);
+      started = startupLatch.await(startupTimeout, TimeUnit.SECONDS);
     } catch (InterruptedException ignored) {
     } finally {
       if (!started) {
@@ -71,7 +73,7 @@ public abstract class AbstractGemFireContainer<SELF extends AbstractGemFireConta
     }
   }
 
-  protected void addJvmArg(String arg) {
+  public void addJvmArg(String arg) {
     jvmArgs.add(arg);
   }
 
@@ -81,4 +83,9 @@ public abstract class AbstractGemFireContainer<SELF extends AbstractGemFireConta
       startupLatch.countDown();
     }
   }
+
+  public void setHostnameForClients(String hostnameForClients) {
+    this.hostnameForClients = hostnameForClients;
+  }
+
 }

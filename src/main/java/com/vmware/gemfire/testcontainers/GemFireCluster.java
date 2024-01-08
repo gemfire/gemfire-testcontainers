@@ -86,6 +86,7 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
   private final List<Integer> serverPorts = new ArrayList<>();
   private final List<MemberConfig> locatorConfigs = new ArrayList<>();
   private final List<MemberConfig> serverConfigs = new ArrayList<>();
+  private Network network;
 
   private Runnable postDeployGfsh = () -> {
   };
@@ -135,7 +136,7 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
    * </ul>
    */
   public void start() {
-    Network network =
+    network =
         Network.builder().createNetworkCmdModifier(it -> it.withName("gemfire-" + suffix)).build();
 
     proxy = new GemFireProxyContainer(locatorConfigs, serverConfigs);
@@ -188,9 +189,7 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
    */
   @Override
   public void close() {
-    if (proxy != null) {
-      proxy.stop();
-    }
+    stopProxy();
     serverConfigs.stream()
         .map(MemberConfig::getContainer)
         .filter(Objects::nonNull)
@@ -199,6 +198,24 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
         .map(MemberConfig::getContainer)
         .filter(Objects::nonNull)
         .forEach(GenericContainer::stop);
+  }
+
+  /**
+   * Return the Docker network the cluster is running on.
+   * @return the docker network
+   */
+  public Network getNetwork() {
+    return network;
+  }
+
+  /**
+   * Explicitly stop the socat proxy container. Typically this is not necessary but might be useful
+   * in some testing scenarios.
+   */
+  public void stopProxy() {
+    if (proxy != null) {
+      proxy.stop();
+    }
   }
 
   /**
@@ -319,6 +336,32 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
                   + localPort);
           System.err.println("Waiting for debugger to connect on port " + localPort);
         });
+  }
+
+  /**
+   * Set the timeout to wait for GemFire members to start.
+   *
+   * @param memberGlob a member name glob to select which members should receive the configuration
+   * @param timeout    the timeout in seconds
+   * @return this
+   */
+  public GemFireCluster withStartupTimeout(String memberGlob, int timeout) {
+    return withConfiguration(memberGlob, container -> container.setStartupTimeout(timeout));
+  }
+
+  /**
+   * Set the hostname-for-clients option when starting members. This defaults to {@code localhost}
+   * and should only need to be changed for special testing scenarios; for example when using a
+   * SNI proxy.
+   *
+   * @param memberGlob         a member name glob to select which members should receive the
+   *                           configuration
+   * @param hostnameForClients the hostname to provide to clients for connecting.
+   * @return this
+   */
+  public GemFireCluster withHostnameForClients(String memberGlob, String hostnameForClients) {
+    return withConfiguration(memberGlob,
+        container -> container.setHostnameForClients(hostnameForClients));
   }
 
   /**

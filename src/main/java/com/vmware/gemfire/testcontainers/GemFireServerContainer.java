@@ -8,7 +8,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
+import javax.swing.text.html.Option;
 
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
@@ -19,8 +22,7 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
   private static final List<String> DEFAULT_SERVER_JVM_ARGS =
       Collections.unmodifiableList(Arrays.asList(
           "--J=-Dgemfire.use-cluster-configuration=true",
-          "--J=-Dgemfire.locator-wait-time=120",
-          "--hostname-for-clients=localhost"
+          "--J=-Dgemfire.locator-wait-time=120"
       ));
 
   public GemFireServerContainer(MemberConfig config, DockerImageName image, Network network,
@@ -29,7 +31,7 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
   }
 
   @Override
-  protected String getMemberName() {
+  public String getMemberName() {
     return config.getMemberName();
   }
 
@@ -45,7 +47,8 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
 
   @Override
   protected void configure() {
-    withCreateContainerCmdModifier(it -> it.withName(config.getHostname()));
+    withCreateContainerCmdModifier(it -> it.withName(config.getHostname())
+        .withAliases(config.getMemberName()));
 
     config.apply(this);
 
@@ -56,6 +59,7 @@ public class GemFireServerContainer<SELF extends GemFireServerContainer<SELF>>
     command.add("--name=" + config.getMemberName());
     command.add("--server-port=" + config.getPort());
     command.add("--locators=" + locatorAddresses);
+    command.add("--hostname-for-clients=" + hostnameForClients);
     command.addAll(jvmArgs);
 
     String classpathPart = getBinds()
