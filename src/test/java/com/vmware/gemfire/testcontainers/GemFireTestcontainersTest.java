@@ -184,15 +184,19 @@ public class GemFireTestcontainersTest {
 
   @Test
   public void testWithSecurityManagerOnClasspath() {
+    String username = "cluster,data";
+    String password = "cluster,data";
+
     try (GemFireCluster cluster = new GemFireCluster()) {
-      cluster.withClasspath(ALL_GLOB, "build/classes/java/test", "out/test/classes")
+      cluster.withClasspath(ALL_GLOB, "out/test/classes", "build/classes/java/test")
           .withGemFireProperty(ALL_GLOB, "security-manager", SimpleSecurityManager.class.getName())
-          .withGemFireProperty(ALL_GLOB, "security-username", "cluster")
-          .withGemFireProperty(ALL_GLOB, "security-password", "cluster")
+          .withGemFireProperty(ALL_GLOB, "security-username", username)
+          .withGemFireProperty(ALL_GLOB, "security-password", password)
           .acceptLicense()
           .start();
 
-      cluster.gfsh(true, "list members",
+      cluster.gfsh(true, Credentials.of(username, password),
+          "list members",
           "create region --name=FOO --type=REPLICATE");
 
       try (

@@ -572,6 +572,10 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
    * @return the result output of executing the gfsh commands as a script.
    */
   public String gfsh(boolean logOutput, String... commands) {
+    return gfsh(logOutput, Credentials.NONE, commands);
+  }
+
+  public String gfsh(boolean logOutput, Credentials credentials, String... commands) {
     if (commands.length == 0) {
       return null;
     }
@@ -583,7 +587,12 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
     if (commands[0].startsWith("connect")) {
       fullCommand = "";
     } else {
-      fullCommand = String.format("connect --jmx-manager=localhost[%d]\n", JMX_PORT);
+      fullCommand = String.format("connect --jmx-manager=localhost[%d]", JMX_PORT);
+      if (credentials != Credentials.NONE) {
+        fullCommand += " --username=" + credentials.getUsername();
+        fullCommand += " --password=" + credentials.getPassword();
+      }
+      fullCommand += "\n";
     }
     fullCommand += String.join("\n", commands);
 
