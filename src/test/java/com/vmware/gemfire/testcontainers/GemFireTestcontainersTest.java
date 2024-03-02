@@ -134,9 +134,9 @@ public class GemFireTestcontainersTest {
           .as("Command failed with: " + execResult2)
           .isEqualTo(0);
 
-
       String securityFile = getClass().getClassLoader().getResource("security.properties").getFile();
-      gfsh = cluster.gfshBuilder().withSecurityProperties(securityFile);
+      gfsh = cluster.gfshBuilder()
+          .withSecurityProperties(securityFile).build();
 
       try {
         gfsh.run();
@@ -152,7 +152,8 @@ public class GemFireTestcontainersTest {
 
       Properties securityProperties = new Properties();
       securityProperties.setProperty("foo", "bar");
-      gfsh = cluster.gfshBuilder().withSecurityProperties(securityProperties);
+      gfsh = cluster.gfshBuilder()
+          .withSecurityProperties(securityProperties).build();
 
       try {
         gfsh.run();

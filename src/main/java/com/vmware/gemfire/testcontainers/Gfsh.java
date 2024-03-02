@@ -115,7 +115,7 @@ public class Gfsh {
     }
 
     /**
-     * Configure with a keystore when TLS is enabled for JMX connections
+     * Configure with a keystore when TLS is enabled for gfsh connections
      *
      * @param keyStoreFile     the keystore file to be used. This file will be copied to the
      *                         locator on which gfsh is execd.
@@ -129,7 +129,7 @@ public class Gfsh {
     }
 
     /**
-     * Configure with a keystore when TLS is enabled for JMX connections
+     * Configure with a keystore when TLS is enabled for gfsh connections
      *
      * @param keyStoreBytes    the raw bytes of the keystore file to be used
      * @param keyStorePassword the keystore password
@@ -144,7 +144,7 @@ public class Gfsh {
     }
 
     /**
-     * Configure with a truststore when TLS is enabled for JMX connections
+     * Configure with a truststore when TLS is enabled for gfsh connections
      *
      * @param trustStoreFile     the truststore file to be used. This file will be copied to the
      *                           locator on which gfsh is execd.
@@ -159,7 +159,7 @@ public class Gfsh {
     }
 
     /**
-     * Configure with a truststore when TLS is enabled for JMX connections
+     * Configure with a truststore when TLS is enabled for gfsh connections
      *
      * @param trustStoreBytes    the raw bytes of the truststore file to be used
      * @param trustStorePassword the truststore password
@@ -174,7 +174,7 @@ public class Gfsh {
     }
 
     /**
-     * The ciphers to use for JMX connections.
+     * The ciphers to use for gfsh connections.
      *
      * @param ciphers a cipher or comma-separated list if there are multiple.
      * @return this
@@ -185,13 +185,24 @@ public class Gfsh {
     }
 
     /**
-     * The protocols to use for JMX connections
+     * The protocols to use for gfsh connections
      *
      * @param protocols a protocol or comma-separated list if there are multiple.
      * @return this
      */
     public Builder withProtocols(String protocols) {
       gfshOptions.put("--protocols", protocols);
+      return this;
+    }
+
+    /**
+     * The token to use for gfsh connections
+     *
+     * @param token a token that will be processed by the configured SecurityManager.
+     * @return this
+     */
+    public Builder withToken(String token) {
+      gfshOptions.put("--token", token);
       return this;
     }
 
@@ -207,41 +218,38 @@ public class Gfsh {
     }
 
     /**
-     * Configure gfsh with a security properties file. The file should contain all required
-     * properties to connect as, using this method, will override any other previous
-     * {@code with*} calls that may already have been invoked.
-     * @param securityFile file containing all security properties
+     * Configure gfsh with a security properties file.
      *
+     * @param securityFile file containing all security properties
      * @return a Gfsh instance set up to use the provided security options
      * @throws IOException if the file cannot be read correctly
      */
-    public Gfsh withSecurityProperties(String securityFile) throws IOException {
+    public Builder withSecurityProperties(String securityFile) throws IOException {
       byte[] content = Files.readAllBytes(Paths.get(securityFile));
-      return writeSecurityPropertiesFile(content);
+      writeSecurityPropertiesFile(content);
+      return this;
     }
 
     /**
-     * Configure gfsh with security properties. Using this method will override any other previous
-     * {@code with*} calls that may already have been invoked.
+     * Configure gfsh with security properties.
      *
      * @param securityProperties properties containing all security options required to connect
      * @return a Gfsh instance set up to use the provided security properties
      * @throws IOException if the properties cannot be processed correctly
      */
-    public Gfsh withSecurityProperties(Properties securityProperties) throws IOException {
+    public Builder withSecurityProperties(Properties securityProperties) throws IOException {
       try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
         securityProperties.store(baos, "Security Properties");
-        return writeSecurityPropertiesFile(baos.toByteArray());
+        writeSecurityPropertiesFile(baos.toByteArray());
       }
+      return this;
     }
 
-    private Gfsh writeSecurityPropertiesFile(byte[] fileBytes) {
+    private void writeSecurityPropertiesFile(byte[] fileBytes) {
       String filename = "/security.properties";
       List<String> options = new ArrayList<>();
       options.add("--security-properties-file=");
       locator.copyFileToContainer(Transferable.of(fileBytes, 0666), filename);
-
-      return withConnect(options);
     }
 
     /**
