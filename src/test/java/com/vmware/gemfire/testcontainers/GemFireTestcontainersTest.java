@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Objects;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
@@ -132,6 +133,34 @@ public class GemFireTestcontainersTest {
       assertThat(execResult2.getExitCode())
           .as("Command failed with: " + execResult2)
           .isEqualTo(0);
+
+
+      String securityFile = getClass().getClassLoader().getResource("security.properties").getFile();
+      gfsh = cluster.gfshBuilder().withSecurityProperties(securityFile);
+
+      try {
+        gfsh.run();
+      } catch (Exception ignored) {
+      }
+
+      String fileContents = locator.execInContainer("cat", "/security.properties").getStdout();
+      assertThat(fileContents).contains(
+          "ssl-keystore=ks.jks",
+          "ssl-keystore-password=key_pass",
+          "ssl-truststore=ts.jks",
+          "ssl-truststore-password=trust_pass");
+
+      Properties securityProperties = new Properties();
+      securityProperties.setProperty("foo", "bar");
+      gfsh = cluster.gfshBuilder().withSecurityProperties(securityProperties);
+
+      try {
+        gfsh.run();
+      } catch (Exception ignored) {
+      }
+
+      fileContents = locator.execInContainer("cat", "/security.properties").getStdout();
+      assertThat(fileContents).contains("foo=bar");
     }
   }
 

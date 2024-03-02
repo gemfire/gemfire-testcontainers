@@ -6,6 +6,7 @@ package com.vmware.gemfire.testcontainers;
 
 import static com.vmware.gemfire.testcontainers.GemFireCluster.JMX_PORT;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -14,6 +15,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -202,6 +204,44 @@ public class Gfsh {
     public Builder withLogging(boolean withLogging) {
       this.withLogging = withLogging;
       return this;
+    }
+
+    /**
+     * Configure gfsh with a security properties file. The file should contain all required
+     * properties to connect as, using this method, will override any other previous
+     * {@code with*} calls that may already have been invoked.
+     * @param securityFile file containing all security properties
+     *
+     * @return a Gfsh instance set up to use the provided security options
+     * @throws IOException if the file cannot be read correctly
+     */
+    public Gfsh withSecurityProperties(String securityFile) throws IOException {
+      byte[] content = Files.readAllBytes(Paths.get(securityFile));
+      return writeSecurityPropertiesFile(content);
+    }
+
+    /**
+     * Configure gfsh with security properties. Using this method will override any other previous
+     * {@code with*} calls that may already have been invoked.
+     *
+     * @param securityProperties properties containing all security options required to connect
+     * @return a Gfsh instance set up to use the provided security properties
+     * @throws IOException if the properties cannot be processed correctly
+     */
+    public Gfsh withSecurityProperties(Properties securityProperties) throws IOException {
+      try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+        securityProperties.store(baos, "Security Properties");
+        return writeSecurityPropertiesFile(baos.toByteArray());
+      }
+    }
+
+    private Gfsh writeSecurityPropertiesFile(byte[] fileBytes) {
+      String filename = "/security.properties";
+      List<String> options = new ArrayList<>();
+      options.add("--security-properties-file=");
+      locator.copyFileToContainer(Transferable.of(fileBytes, 0666), filename);
+
+      return withConnect(options);
     }
 
     /**
