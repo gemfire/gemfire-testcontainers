@@ -16,8 +16,6 @@ import org.testcontainers.utility.DockerImageName;
 public class GemFireLocatorContainer<SELF extends GemFireLocatorContainer<SELF>>
     extends AbstractGemFireContainer<SELF> {
 
-  private static final int HTTP_PORT = 7070;
-
   private static final List<String> DEFAULT_LOCATOR_JVM_ARGS =
       Collections.unmodifiableList(Arrays.asList(
           "--J=-Dgemfire.use-cluster-configuration=true",

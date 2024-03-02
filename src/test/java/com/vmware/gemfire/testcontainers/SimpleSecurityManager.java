@@ -61,7 +61,7 @@ public class SimpleSecurityManager implements SecurityManager {
     }
     String username = credentials.getProperty(USER_NAME);
     String password = credentials.getProperty(PASSWORD);
-    if (username != null && username.equals(password)) {
+    if (username != null && !username.isEmpty() && username.equals(password)) {
       return username;
     }
     throw new AuthenticationFailedException("invalid username/password");
