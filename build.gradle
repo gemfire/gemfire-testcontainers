@@ -7,7 +7,7 @@ plugins {
 targetCompatibility = '1.8'
 
 group 'com.vmware.gemfire'
-version '2.0.0'
+version '2.1.0-SNAPSHOT'
 
 repositories {
   mavenCentral()
@@ -32,9 +32,9 @@ publishing {
         developers {
           developer {
             name = 'Jens Deppe'
-            email = 'jdeppe@vmware.com'
-            organization= 'VMware'
-            organizationUrl = 'https://vmware.com'
+            email = 'jens.deppe@broadcom.com'
+            organization= 'Broadcom Inc.'
+            organizationUrl = 'https://broadcom.com'
           }
         }
         licenses {
@@ -67,7 +67,8 @@ publishing {
 }
 
 dependencies {
-  api 'org.testcontainers:testcontainers:1.18.3'
+  api 'org.testcontainers:testcontainers:1.19.6'
+  api 'com.github.docker-java:docker-java-transport-netty:3.3.5'
 
   testImplementation 'org.assertj:assertj-core:3.24.2'
   testImplementation 'ch.qos.logback:logback-classic:1.3.5'

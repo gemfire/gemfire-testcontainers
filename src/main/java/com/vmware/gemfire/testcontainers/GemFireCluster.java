@@ -10,9 +10,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -21,10 +22,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.junit.runner.Description;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
-import org.testcontainers.containers.Container;
 import org.testcontainers.containers.FailureDetectingExternalResource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -72,7 +70,7 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
   public static final String LOCATOR_GLOB = "locator-*";
   public static final String SERVER_GLOB = "server-*";
 
-  private static final int JMX_PORT = 1099;
+  static final int JMX_PORT = 1099;
 
   private static final int DEFAULT_LOCATOR_COUNT = 1;
   private static final int DEFAULT_SERVER_COUNT = 2;
@@ -198,6 +196,17 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
         .map(MemberConfig::getContainer)
         .filter(Objects::nonNull)
         .forEach(GenericContainer::stop);
+  }
+
+  /**
+   * Return all the containers mapped by member name: locator-0, locator-1..., server-0, server-1...
+   * @return a map of member-name : container
+   */
+  public Map<String, AbstractGemFireContainer<?>> getContainers() {
+    Map<String, AbstractGemFireContainer<?>> result = new HashMap<>();
+    locatorConfigs.forEach(c -> result.put(c.getMemberName(), c.getContainer()));
+    serverConfigs.forEach(c -> result.put(c.getMemberName(), c.getContainer()));
+    return result;
   }
 
   /**
@@ -553,6 +562,16 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
   }
 
   /**
+   * Return a builder object that can be used to configure and create a {@link Gfsh} instance
+   * when additional arguments are required particularly for security and SSL connectivity.
+   *
+   * @return a gfsh builder instance
+   */
+  public Gfsh.Builder gfshBuilder() {
+    return new Gfsh.Builder(locatorConfigs.get(0).getContainer());
+  }
+
+  /**
    * Execute the provided commands as a {@code gfsh} script.
    * <p>
    * For example:
@@ -564,6 +583,9 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
    * <p>
    * In order to execute gfsh commands as <i>part of startup</i>, use the
    * {@link #withGfsh(boolean, String...)} method instead.
+   * <p>
+   * This method does not provide the ability configure additional gfsh connection options.
+   * Instead, use {@link #gfshBuilder()} and the {@link Gfsh} class for that.
    *
    * @param logOutput boolean indicating whether to log output. If the script returns a non-zero
    *                  error code, the output will always be logged.
@@ -572,55 +594,10 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
    * @return the result output of executing the gfsh commands as a script.
    */
   public String gfsh(boolean logOutput, String... commands) {
-    return gfsh(logOutput, Credentials.NONE, commands);
-  }
-
-  public String gfsh(boolean logOutput, Credentials credentials, String... commands) {
-    if (commands.length == 0) {
-      return null;
-    }
-
-    AbstractGemFireContainer<?> locator = locatorConfigs.get(0).getContainer();
-    Logger logger = LoggerFactory.getLogger("gfsh");
-
-    String fullCommand;
-    if (commands[0].startsWith("connect")) {
-      fullCommand = "";
-    } else {
-      fullCommand = String.format("connect --jmx-manager=localhost[%d]", JMX_PORT);
-      if (credentials != Credentials.NONE) {
-        fullCommand += " --username=" + credentials.getUsername();
-        fullCommand += " --password=" + credentials.getPassword();
-      }
-      fullCommand += "\n";
-    }
-    fullCommand += String.join("\n", commands);
-
-    locator.copyFileToContainer(Transferable.of(fullCommand, 06666), "/script.gfsh");
-    Container.ExecResult result;
-    try {
-      result = locator.execInContainer("gfsh", "-e", "run --file=/script.gfsh");
-
-      boolean scriptError = result.getExitCode() != 0;
-      if (logOutput || scriptError) {
-        for (String line : result.toString().split("\n")) {
-          if (scriptError) {
-            logger.error(line);
-          } else {
-            logger.info(line);
-          }
-        }
-      }
-    } catch (Exception ex) {
-      throw new RuntimeException("Error executing gfsh command: " + Arrays.asList(commands), ex);
-    }
-
-    if (result.getExitCode() != 0) {
-      throw new RuntimeException(
-          "Error executing gfsh command. Return code: " + result.getExitCode());
-    }
-
-    return result.toString();
+    return gfshBuilder()
+        .withLogging(logOutput)
+        .build()
+        .run(commands);
   }
 
 }

@@ -8,10 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
-
-import javax.swing.text.html.Option;
 
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;

@@ -17,8 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import org.junit.Test;
-import org.testcontainers.Testcontainers;
-import org.testcontainers.containers.Network;
+import org.testcontainers.containers.Container;
 import org.testcontainers.images.builder.Transferable;
 
 import org.apache.geode.cache.Region;
@@ -65,7 +64,7 @@ public class GemFireTestcontainersTest {
   }
 
   @Test
-  public void testSetupWithGfsh() {
+  public void testSetupWithSimpleGfsh() {
     try (GemFireCluster cluster = new GemFireCluster()) {
       cluster.acceptLicense();
       cluster.start();
@@ -90,6 +89,49 @@ public class GemFireTestcontainersTest {
 
         assertThat(region.get(1)).isEqualTo("Hello World");
       }
+    }
+  }
+
+  @Test
+  public void testSetupWithGfshBuilder() throws Exception {
+    try (GemFireCluster cluster = new GemFireCluster(1, 0)) {
+      cluster.acceptLicense();
+      cluster.start();
+
+      String classResource = getClass().getName().replace(".", "/") + ".class";
+      String classFile = getClass().getClassLoader().getResource(classResource).getFile();
+
+      // Check that the files are copied correctly
+      Gfsh gfsh = cluster.gfshBuilder()
+          .withKeyStore(classFile, "key_pass")
+          .withTrustStore(classFile, "trust_pass")
+          .build();
+
+      try {
+        gfsh.run();
+      } catch (Exception ignored) {
+        // We just care about the contents of the gfsh script and other relevant files that
+        // should have been created.
+      }
+
+      AbstractGemFireContainer<?> locator = cluster.getContainers().get("locator-0");
+
+      String scriptContents = locator.execInContainer("cat", "/script.gfsh").getStdout();
+      assertThat(scriptContents).contains(
+          "connect --jmx-manager=localhost[1099]",
+          "--trust-store=/trust-store",
+          "--trust-store-password=trust_pass",
+          "--key-store-password=key_pass",
+          "--key-store=/key-store");
+
+      Container.ExecResult execResult1 = locator.execInContainer("test", "-e", "/key-store");
+      assertThat(execResult1.getExitCode())
+          .as("Command failed with: " + execResult1)
+          .isEqualTo(0);
+      Container.ExecResult execResult2 = locator.execInContainer("test", "-e", "/trust-store");
+      assertThat(execResult2.getExitCode())
+          .as("Command failed with: " + execResult2)
+          .isEqualTo(0);
     }
   }
 
@@ -174,10 +216,7 @@ public class GemFireTestcontainersTest {
       cluster.acceptLicense();
       cluster.start();
 
-      String result = cluster.gfsh(
-          true,
-          "export cluster-configuration"
-      );
+      String result = cluster.gfsh(true, "export cluster-configuration");
       assertThat(result).contains("<pdx read-serialized=\"true\"", "ReflectionBasedAutoSerializer");
     }
   }
@@ -195,8 +234,12 @@ public class GemFireTestcontainersTest {
           .acceptLicense()
           .start();
 
-      cluster.gfsh(true, Credentials.of(username, password),
-          "list members",
+      Gfsh gfsh = cluster.gfshBuilder()
+          .withCredentials(username, password)
+          .withLogging(true)
+          .build();
+
+      gfsh.run("list members",
           "create region --name=FOO --type=REPLICATE");
 
       try (
