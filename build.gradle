@@ -68,7 +68,6 @@ publishing {
 
 dependencies {
   api 'org.testcontainers:testcontainers:1.19.6'
-  api 'com.github.docker-java:docker-java-transport-netty:3.3.5'
 
   testImplementation 'org.assertj:assertj-core:3.24.2'
   testImplementation 'ch.qos.logback:logback-classic:1.3.5'
