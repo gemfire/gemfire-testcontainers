@@ -97,6 +97,20 @@ Junit `@Rule` annotation. For example:
 In this case, with the addition of the `@Rule` annotation, Junit would be responsible for the
 lifecycle of the GemFire cluster.
 
+If additional options for gfsh connectivity are required then using the `Gfsh.Builder` would be
+appropriate. An instance of this Builder can be created using the `GemFireCluster.gfshBuilder()`
+method. Using this approach allows for configuring gfsh with various security as well as TLS
+options. For example if a `SecurityManager` is configured gfsh would require a username and
+password to connect:
+
+```java
+    Gfsh gfsh = cluster.gfshBuilder()
+        .withCredentials("username", "pa$$word")
+        .withLogging(true)
+        .build();
+    gfsh.run("list members");
+```
+
 ## Additional configuration
 
 Locators and servers can be configured with specific GemFire parameters:
