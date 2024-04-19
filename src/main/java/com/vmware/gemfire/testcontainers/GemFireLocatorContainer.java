@@ -56,7 +56,6 @@ public class GemFireLocatorContainer<SELF extends GemFireLocatorContainer<SELF>>
     command.add("--name=" + config.getMemberName());
     command.add("--port=" + config.getPort());
     command.add("--locators=" + locatorAddresses);
-    command.add("--J=-Dgemfire.http-service-port=" + config.getProxyHttpPublicPort());
     command.add("--hostname-for-clients=" + hostnameForClients);
     command.addAll(jvmArgs);
 

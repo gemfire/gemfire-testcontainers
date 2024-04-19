@@ -4,6 +4,8 @@
 
 package com.vmware.gemfire.testcontainers;
 
+import static com.vmware.gemfire.testcontainers.GemFireCluster.HTTP_PORT;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,15 +34,11 @@ public class GemFireProxyContainer extends SocatContainer {
     this.serverConfigs = serverConfigs;
 
     int port = BASE_PORT;
-    // Set up the 'regular' locator ports
+    // Set up the locator ports - both regular and http
     for (int i = 0; i < locatorConfigs.size(); i++) {
       addExposedPort(port);
       locatorConfigs.get(i).setProxyListenPort(port);
       port++;
-    }
-
-    // Set up the http ports for locators
-    for (int i = 0; i < locatorConfigs.size(); i++) {
       addExposedPort(port);
       locatorConfigs.get(i).setProxyHttpListenPort(port);
       port++;
@@ -49,6 +47,9 @@ public class GemFireProxyContainer extends SocatContainer {
     for (int i = 0; i < serverConfigs.size(); i++) {
       addExposedPort(port);
       serverConfigs.get(i).setProxyListenPort(port);
+      port++;
+      addExposedPort(port);
+      serverConfigs.get(i).setProxyHttpListenPort(port);
       port++;
     }
   }
@@ -66,18 +67,18 @@ public class GemFireProxyContainer extends SocatContainer {
       String socatCommand = generateSocatCommand(config);
       socats.add(socatCommand);
       logger().info("  " + socatCommand);
-    }
-
-    for (MemberConfig config : locatorConfigs) {
-      String socatCommand = generateHttpSocatCommand(config);
-      socats.add(socatCommand);
-      logger().info("  " + socatCommand);
+      String socatHttpCommand = generateHttpSocatCommand(config);
+      socats.add(socatHttpCommand);
+      logger().info("  " + socatHttpCommand);
     }
 
     for (MemberConfig config : serverConfigs) {
       String socatCommand = generateSocatCommand(config);
       socats.add(socatCommand);
       logger().info("  " + socatCommand);
+      String socatHttpCommand = generateHttpSocatCommand(config);
+      socats.add(socatHttpCommand);
+      logger().info("  " + socatHttpCommand);
     }
 
     String command = "#!/bin/sh\n";
@@ -106,7 +107,7 @@ public class GemFireProxyContainer extends SocatContainer {
     return String.format("socat TCP-LISTEN:%d,fork,reuseaddr TCP:%s:%d",
         internalPort,
         memberConfig.getHostname(),
-        mappedPort
+        HTTP_PORT
     );
   }
 }

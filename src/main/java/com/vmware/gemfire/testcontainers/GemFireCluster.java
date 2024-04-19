@@ -71,6 +71,7 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
   public static final String SERVER_GLOB = "server-*";
 
   static final int JMX_PORT = 1099;
+  static final int HTTP_PORT = 7070;
 
   private static final int DEFAULT_LOCATOR_COUNT = 1;
   private static final int DEFAULT_SERVER_COUNT = 2;
@@ -200,6 +201,7 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
 
   /**
    * Return all the containers mapped by member name: locator-0, locator-1..., server-0, server-1...
+   *
    * @return a map of member-name : container
    */
   public Map<String, AbstractGemFireContainer<?>> getContainers() {
@@ -211,6 +213,7 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
 
   /**
    * Return the Docker network the cluster is running on.
+   *
    * @return the docker network
    */
   public Network getNetwork() {
@@ -389,7 +392,7 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
    * to be a class resource.
    *
    * @param memberGlob a member name glob to select which members should receive the configuration
-   * @param cacheXml the cache xml file to use
+   * @param cacheXml   the cache xml file to use
    * @return this
    */
   public GemFireCluster withCacheXml(String memberGlob, String cacheXml) {
@@ -556,9 +559,23 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
    * configured locator is returned.
    *
    * @return the http ports for gfsh connections
+   * @deprecated use {@link #getHttpPorts(String)} instead
    */
+  @Deprecated
   public List<Integer> getHttpPorts() {
     return locatorHttpPorts;
+  }
+
+  /**
+   * Return the ports that can be used to connect to the found members over HTTP.
+   *
+   * @param memberGlob a member name glob to select which members should receive the configuration
+   * @return the http ports to connect to the member's HTTP service
+   */
+  public List<Integer> getHttpPorts(String memberGlob) {
+    return findMembers(memberGlob).stream()
+        .map(MemberConfig::getProxyHttpPublicPort)
+        .collect(Collectors.toList());
   }
 
   /**

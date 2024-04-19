@@ -12,6 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -393,6 +396,39 @@ public class GemFireTestcontainersTest {
     }
 
     assertThat(lineCounter.get()).isGreaterThan(100);
+  }
+
+  @Test
+  public void testHttpPortsAreCorrect() throws Exception {
+    try (GemFireCluster cluster = new GemFireCluster()) {
+      cluster.withGemFireProperty(SERVER_GLOB, "start-dev-rest-api", "true");
+      cluster.acceptLicense();
+      cluster.start();
+
+      List<Integer> locatorHttpPorts = cluster.getHttpPorts(LOCATOR_GLOB);
+      assertThat(locatorHttpPorts).hasSize(1);
+
+      for (Integer port : locatorHttpPorts) {
+        getAndValidate("http://localhost:" + port + "/management");
+      }
+
+      List<Integer> serverHttpPorts = cluster.getHttpPorts(SERVER_GLOB);
+      assertThat(serverHttpPorts).hasSize(2);
+
+      for (Integer port : serverHttpPorts) {
+        getAndValidate("http://localhost:" + port + "/gemfire-api");
+      }
+    }
+  }
+
+  private void getAndValidate(String target) throws Exception {
+    URL url = new URL(target);
+    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+    con.setInstanceFollowRedirects(true);
+    con.setRequestMethod("GET");
+
+    assertThat(con.getResponseCode()).as("URL at " + target + " failed to respond")
+        .isEqualTo(200);
   }
 
 }
