@@ -61,7 +61,7 @@ publishing {
 
   repositories {
     maven {
-      name = "Maven Central"
+      name = "MavenCentral"
       url = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
       credentials {
         username = System.getenv("PUBLISH_MAVEN_USERNAME")
