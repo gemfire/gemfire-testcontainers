@@ -1,8 +1,8 @@
 plugins {
-  id 'java'
-  id 'maven-publish'
   id 'java-library'
+  id 'maven-publish'
   id 'signing'
+  id 'org.jreleaser' version '1.12.0'
 }
 
 targetCompatibility = '1.8'
@@ -25,6 +25,36 @@ repositories {
 
 signing {
     sign publishing.publications
+}
+
+jreleaser {
+  signing {
+    active = 'ALWAYS'
+    armored = true
+  }
+  deploy {
+    maven {
+      nexus2 {
+        'maven-central' {
+          active = 'ALWAYS'
+          url = 'https://s01.oss.sonatype.org/service/local'
+          snapshotUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+          closeRepository = true
+          releaseRepository = true
+          stagingRepository('build/staging-deploy')
+        }
+      }
+      /* Portal Publisher API
+      mavenCentral {
+          sonatype {
+              active = 'ALWAYS'
+              url = 'https://central.sonatype.com/api/v1/publisher'
+              stagingRepository('target/staging-deploy')
+          }
+      }
+      */
+    }
+  }
 }
 
 publishing {
