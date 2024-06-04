@@ -260,7 +260,7 @@ public class GemFireTestcontainersTest {
     String password = "cluster,data";
 
     try (GemFireCluster cluster = new GemFireCluster()) {
-      cluster.withClasspath(ALL_GLOB, "out/test/classes", "build/classes/java/test")
+      cluster.withClasspath(ALL_GLOB, "out/test/classes", "target/test-classes")
           .withGemFireProperty(ALL_GLOB, "security-manager", SimpleSecurityManager.class.getName())
           .withGemFireProperty(ALL_GLOB, "security-username", username)
           .withGemFireProperty(ALL_GLOB, "security-password", password)
