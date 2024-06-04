@@ -108,7 +108,7 @@
         <configuration>
           <publishingServerId>central</publishingServerId>
           <tokenAuth>false</tokenAuth>
-          <publishingType>USER_MANAGED</publishingType>
+          <publishingType>AUTOMATIC</publishingType>
         </configuration>
       </plugin>
     </plugins>
