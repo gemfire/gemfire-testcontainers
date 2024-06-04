@@ -109,6 +109,7 @@
           <publishingServerId>central</publishingServerId>
           <tokenAuth>false</tokenAuth>
           <publishingType>AUTOMATIC</publishingType>
+          <autoPublish>true</autoPublish>
         </configuration>
       </plugin>
     </plugins>
