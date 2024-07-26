@@ -35,12 +35,13 @@
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <gemfire.version>10.1.1</gemfire.version>
   </properties>
 
   <repositories>
     <repository>
-      <id>gemfire-release-repo</id>
-      <url>https://commercial-repo.pivotal.io/data3/gemfire-release-repo/gemfire</url>
+      <id>gemfire-broadcom-repo</id>
+      <url>https://packages.broadcom.com/artifactory/gemfire</url>
     </repository>
   </repositories>
 
@@ -66,19 +67,19 @@
     <dependency>
       <groupId>com.vmware.gemfire</groupId>
       <artifactId>gemfire-core</artifactId>
-      <version>10.0.1</version>
+      <version>${gemfire.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.vmware.gemfire</groupId>
       <artifactId>gemfire-log4j</artifactId>
-      <version>10.0.1</version>
+      <version>${gemfire.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.vmware.gemfire</groupId>
       <artifactId>gemfire-logging</artifactId>
-      <version>10.0.1</version>
+      <version>${gemfire.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
