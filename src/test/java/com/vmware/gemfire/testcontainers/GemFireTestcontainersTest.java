@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -22,6 +23,7 @@ import java.util.function.BiConsumer;
 
 import org.junit.Test;
 import org.testcontainers.containers.Container;
+import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.images.builder.Transferable;
 
 import org.apache.geode.cache.Region;
@@ -41,7 +43,10 @@ public class GemFireTestcontainersTest {
 
   @Test
   public void failWhenLicenseIsNotAccepted() {
-    assertThatThrownBy(() -> new GemFireCluster().start())
+    assertThatThrownBy(() -> new GemFireCluster()
+        .withConfiguration(ALL_GLOB, x -> x.withStartupCheckStrategy(
+                new OneShotStartupCheckStrategy().withTimeout(Duration.ofSeconds(10))))
+        .start())
         .hasRootCauseMessage("Container did not start correctly.");
   }
 
@@ -137,7 +142,8 @@ public class GemFireTestcontainersTest {
           .as("Command failed with: " + execResult2)
           .isEqualTo(0);
 
-      String securityFile = getClass().getClassLoader().getResource("security.properties").getFile();
+      String securityFile =
+          getClass().getClassLoader().getResource("security.properties").getFile();
       gfsh = cluster.gfshBuilder()
           .withSecurityProperties(securityFile).build();
 
@@ -217,7 +223,8 @@ public class GemFireTestcontainersTest {
   @Test
   public void testStartWithCacheXmlExplicitlyCopiedToServers() throws Exception {
     String CACHE_XML = "/test-cache.xml";
-    byte[] rawBytes = readAllBytes(Objects.requireNonNull(getClass().getResourceAsStream(CACHE_XML)));
+    byte[] rawBytes =
+        readAllBytes(Objects.requireNonNull(getClass().getResourceAsStream(CACHE_XML)));
     Transferable fileData = Transferable.of(new String(rawBytes));
 
     try (GemFireCluster cluster = new GemFireCluster()) {
