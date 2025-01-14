@@ -27,7 +27,6 @@ jobs:
               "username": "${{ secrets.COMMERCIAL_MAVEN_USERNAME }}",
               "password": "${{ secrets.COMMERCIAL_MAVEN_PASSWORD }}"
             }]
-          repositories: '[{"id":"gemfire-broadcom-repo", "url":"${{ secrets.GEMFIRE_BROADCOM_REPO }}"}]'
 
       - name: Build and Test
         shell: bash
