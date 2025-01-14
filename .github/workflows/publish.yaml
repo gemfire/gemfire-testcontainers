@@ -48,7 +48,7 @@ jobs:
         
         echo -n '${{ secrets.SIGNING_KEY_TGZ }}' | base64 -d | tar zxf - -C ${HOME} --exclude '*.lock'
         SIGNING_RC=0
-        ./mvnw -DskipTests source:jar javadoc:jar -Pdefault deploy || SIGNING_RC=$?
+        ./mvnw -DskipTests source:jar javadoc:jar deploy || SIGNING_RC=$?
         rm -rf ${HOME}/.gnupg
         
         exit $SIGNING_RC
