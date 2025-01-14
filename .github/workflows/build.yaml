@@ -7,7 +7,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-20.04
-    container: ubuntu:20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,4 +31,4 @@ jobs:
       - name: Build and Test
         shell: bash
         run: |
-          ./mvnw -Pdefault compile test
+          ./mvnw compile test
