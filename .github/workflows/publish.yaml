@@ -2,6 +2,13 @@ name: Publish
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+    - v*
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
 
 jobs:
   publish:
@@ -23,8 +30,8 @@ jobs:
         servers: |
           [{
             "id": "gemfire-broadcom-repo",
-            "username": "${{ secrets.COMMERCIAL_MAVEN_USERNAME }}",
-            "password": "${{ secrets.COMMERCIAL_MAVEN_PASSWORD }}"
+            "username": "${{ secrets.SUPPORT_BROADCOM_COM_USERNAME }}",
+            "password": "${{ secrets.SUPPORT_BROADCOM_COM_PASSWORD }}"
           },{
             "id": "central",
             "username": "${{ secrets.SONATYPE_ROBOT_USERNAME }}",
