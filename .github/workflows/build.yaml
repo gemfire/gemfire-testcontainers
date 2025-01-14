@@ -1,4 +1,4 @@
-
+name: Build and Test
 on:
   push:
     branches:
@@ -7,20 +7,29 @@ on:
 jobs:
   build:
     runs-on: ubuntu-20.04
+    container: ubuntu:20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '8'
           distribution: 'liberica'
+
+      - name: Setup Maven
+        uses: s4u/maven-settings-action@v3.1.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "gemfire-broadcom-repo",
+              "username": "${{ secrets.COMMERCIAL_MAVEN_USERNAME }}",
+              "password": "${{ secrets.COMMERCIAL_MAVEN_PASSWORD }}"
+            }]
 
       - name: Build and Test
         shell: bash
-        env:
-          COMMERCIAL_MAVEN_USERNAME: ${{ secrets.COMMERCIAL_MAVEN_USERNAME }}
-          COMMERCIAL_MAVEN_PASSWORD: ${{ secrets.COMMERCIAL_MAVEN_PASSWORD }}
         run: |
           ./mvnw -Pdefault compile test
