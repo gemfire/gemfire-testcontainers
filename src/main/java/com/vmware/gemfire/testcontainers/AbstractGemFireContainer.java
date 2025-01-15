@@ -42,7 +42,7 @@ public abstract class AbstractGemFireContainer<SELF extends AbstractGemFireConta
     withLogConsumer(this);
 
     if (logContainerOutputToStdout) {
-      withLogConsumer(x -> System.out.print(x.getUtf8String()));
+      withLogConsumer(x -> System.out.printf("[%s] %s", config.getMemberName(), x.getUtf8String()));
     }
   }
 
