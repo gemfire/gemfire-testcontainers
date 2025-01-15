@@ -1,5 +1,9 @@
 # VMware GemFire Testcontainers Integration
 
+![version](https://img.shields.io/github/v/tag/gemfire/gemfire-testcontainers)
+![build](https://github.com/gemfire/gemfire-testcontainers/actions/workflows/build.yml/badge.svg)
+[![javadoc](https://javadoc.io/badge2/dev.gemfire/gemfire-testcontainers/javadoc.svg)](https://javadoc.io/doc/dev.gemfire/gemfire-testcontainers)
+
 Testcontainers can be used to automatically instantiate and manage [VMware GemFire](https://docs.vmware.com/en/VMware-GemFire/index.html)
 clusters. This is enabled using the official [Docker images](https://hub.docker.com/r/gemfire/gemfire) for GemFire.
 
