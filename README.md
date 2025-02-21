@@ -19,13 +19,13 @@ Dependencies for Maven can then be added with:
 <dependency>
   <groupId>dev.gemfire</groupId>
   <artifactId>gemfire-testcontainers</artifactId>
-  <version>2.3.2</version>
+  <version>2.3.3</version>
 </dependency>
 ```
 
 Or, for gradle:
 ```java
-testImplementation 'dev.gemfire:gemfire-testcontainers:2.3.2'
+testImplementation 'dev.gemfire:gemfire-testcontainers:2.3.3'
 ```
 
 _Note that from version 2.3 onwards, the group co-ordinate has changed from `com.vmware.gemfire` to
