@@ -64,7 +64,7 @@ import org.testcontainers.utility.DockerImageName;
 public class GemFireCluster extends FailureDetectingExternalResource implements Closeable {
 
   public static final String DEFAULT_IMAGE =
-      System.getProperty("gemfire.image", "gemfire/gemfire:10");
+      System.getProperty("gemfire.image", "gemfire/gemfire:10.1");
 
   public static final String ALL_GLOB = "*";
   public static final String LOCATOR_GLOB = "locator-*";
