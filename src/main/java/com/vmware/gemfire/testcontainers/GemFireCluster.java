@@ -21,9 +21,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.junit.runner.Description;
 import org.testcontainers.containers.BindMode;
-import org.testcontainers.containers.FailureDetectingExternalResource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.OutputFrame;
@@ -61,7 +59,7 @@ import org.testcontainers.utility.DockerImageName;
  * Note that locators are named "locator-0", "locator-1", ... "locator-N" and servers are similarly
  * named "server-0", "server-1", ... "server-N".
  */
-public class GemFireCluster extends FailureDetectingExternalResource implements Closeable {
+public class GemFireCluster implements Closeable {
 
   public static final String DEFAULT_IMAGE =
       System.getProperty("gemfire.image", "gemfire/gemfire:10.1");
@@ -169,18 +167,6 @@ public class GemFireCluster extends FailureDetectingExternalResource implements 
 
     serverConfigs.forEach(x -> x.getContainer().waitToStart());
     postDeployGfsh.run();
-  }
-
-  @Override
-  protected void starting(Description description) {
-    super.starting(description);
-    start();
-  }
-
-  @Override
-  protected void finished(Description description) {
-    super.finished(description);
-    close();
   }
 
   /**
