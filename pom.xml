@@ -35,7 +35,7 @@
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <gemfire.version>10.1.1</gemfire.version>
+    <gemfire.version>10.2.0</gemfire.version>
     <testcontainers.version>2.0.3</testcontainers.version>
     <junit.version>5.6.1</junit.version>
   </properties>
