@@ -4,12 +4,16 @@
 
 package com.vmware.gemfire.testcontainers;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.client.ClientCache;
 import org.apache.geode.cache.client.ClientCacheFactory;
 import org.apache.geode.cache.client.ClientRegionShortcut;
-
-import org.junit.jupiter.api.*;
 
 public class GemFireTestcontainersRuleTest {
 
