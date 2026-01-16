@@ -19,13 +19,13 @@ Dependencies for Maven can then be added with:
 <dependency>
   <groupId>dev.gemfire</groupId>
   <artifactId>gemfire-testcontainers</artifactId>
-  <version>2.3.3</version>
+  <version>3.0.0</version>
 </dependency>
 ```
 
 Or, for gradle:
 ```java
-testImplementation 'dev.gemfire:gemfire-testcontainers:2.3.3'
+testImplementation 'dev.gemfire:gemfire-testcontainers:3.0.0'
 ```
 
 _Note that from version 2.3 onwards, the group co-ordinate has changed from `com.vmware.gemfire` to
@@ -92,17 +92,14 @@ cluster:
 This, effectively, creates a single script and executes it on the locator instance. The output can
 optionally be logged. This particular method should only be used once the cluster has started.
 In order to run gfsh commands immediately at startup, you may instead use the `withGfsh` variant.
-This is suitable when the lifecycle of the container is managed separately; for example using a
-Junit `@Rule` annotation. For example:
 
 ```java
-    @Rule
-    public void GemFireCluster cluster = new GemFireCluster()
+    try (GemFireCluster cluster = new GemFireCluster()) {
+      cluster.withGfsh("create region --name=ORDERS --type=PARTITION_REDUNDANT")
         .acceptLicense()
-        .withGfsh("create region --name=ORDERS --type=PARTITION_REDUNDANT");
+        .start();
+    }
 ```
-In this case, with the addition of the `@Rule` annotation, Junit would be responsible for the
-lifecycle of the GemFire cluster.
 
 If additional options for gfsh connectivity are required then using the `Gfsh.Builder` would be
 appropriate. An instance of this Builder can be created using the `GemFireCluster.gfshBuilder()`
